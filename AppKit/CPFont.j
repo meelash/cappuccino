@@ -35,6 +35,7 @@ var _CPFonts                    = {},
 @implementation CPFont : CPObject
 {
     CPFontDescriptor _fontDescriptor;
+    CPString _cssString;
 }
 + (void) initialize
 {
@@ -106,7 +107,8 @@ var _CPFonts                    = {},
     if (self)
     {
         _fontDescriptor = fontDescriptor;
-        _CPFonts[[fontDescriptor cssString]] = self;
+        _cssString = [_fontDescriptor cssString];
+        _CPFonts[_cssString] = self;
     }
     return self;
 }
@@ -124,7 +126,7 @@ var _CPFonts                    = {},
 */
 - (CPString)cssString
 {
-    return [_fontDescriptor cssString];
+    return _cssString;
 }
 
 /*!

@@ -84,7 +84,6 @@ CPFontCondensedTrait = (1 << 6);
 @implementation CPFontDescriptor : CPObject
 {
     CPDictionary _attributes;
-    CPString _cssString;
 }
 /*!
     Returns a font descriptor with the specified attributes.
@@ -263,13 +262,9 @@ var _wrapNameRegEx = new RegExp(/(\w+\s+\w+)(,*)/g);
 }
 - (CPString)cssString
 {
-    if (!_cssString)
-    {
-        _cssString = [CPString stringWithString:[self fontStyleCSSString] + " normal " /* font-variant */
+    return [CPString stringWithString:[self fontStyleCSSString] + " normal " /* font-variant */
                                 + [self fontWeightCSSString] + " "
                                 + [self fontSizeCSSString] + " "
-                                + [self fontFamilyCSSString]];
-    }
-    return _cssString; 
+                                + [self fontFamilyCSSString]]; 
 }
 @end
