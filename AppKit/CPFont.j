@@ -19,14 +19,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+ 
+@import "CPFontDescriptor.j"
 
-var _CPFonts                = {},
-    _CPFontSystemFontFace   = @"Arial, sans-serif",
-    _CPWrapRegExp           = new RegExp("\\s*,\\s*", "g");
-
-
-#define _CPCreateCSSString(aName, aSize, isBold) (isBold ? @"bold " : @"") + ROUND(aSize) + @"px " + ((aName === _CPFontSystemFontFace) ? aName : (@"\"" + aName.replace(_CPWrapRegExp, '", "') + @"\", " + _CPFontSystemFontFace))
-#define _CPCachedFont(aName, aSize, isBold) _CPFonts[_CPCreateCSSString(aName, aSize, isBold)]
+var _CPFonts                    = {},
+    _CPSystemFontDescriptor     = nil,
+    _CPBoldSystemFontDescriptor = nil;
 
 /*! 
     @ingroup appkit
@@ -36,13 +34,14 @@ var _CPFonts                = {},
 */
 @implementation CPFont : CPObject
 {
-    CPString    _name;
-    float       _size;
-    BOOL        _isBold;
-    
-    CPString    _cssString;
+    CPFontDescriptor _fontDescriptor;
 }
-
++ (void) initialize
+{
+    var masterDescriptor = [CPFontDescriptor fontDescriptorWithName:@"Arial" size:12.0];
+    _CPSystemFontDescriptor = [masterDescriptor fontDescriptorWithSymbolicTraits:CPFontSansSerifClass];
+    _CPBoldSystemFontDescriptor = [masterDescriptor fontDescriptorWithSymbolicTraits:CPFontSansSerifClass|CPFontBoldTrait];
+}
 /*!
     Returns a font with the specified name and size.
     @param aName the name of the font
@@ -51,7 +50,20 @@ var _CPFonts                = {},
 */
 + (CPFont)fontWithName:(CPString)aName size:(float)aSize
 {
-    return _CPCachedFont(aName, aSize, NO) || [[CPFont alloc] _initWithName:aName size:aSize bold:NO];
+    var fontDescriptor = [CPFontDescriptor fontDescriptorWithName:aName size:aSize];
+    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+}
+
+/*!
+    Returns a font with the specified descriptor and size.
+    @param aDescriptor a font descriptor
+    @param aSize the size of the font (in points), will overwrite descritor font size if present.
+    @return the requested font
+*/
++ (CPFont)fontWithDescriptor:(CPFontDescriptor)aDescriptor size:(float)aSize
+{
+    var fontDescriptor = [aDescriptor fontDescriptorWithSize:aSize];
+    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -62,7 +74,8 @@ var _CPFonts                = {},
 */
 + (CPFont)boldFontWithName:(CPString)aName size:(float)aSize
 {
-    return _CPCachedFont(aName, aSize, YES) || [[CPFont alloc] _initWithName:aName size:aSize bold:YES];
+    var fontDescriptor = [[CPFontDescriptor fontDescriptorWithName:aName size:aSize] fontDescriptorWithSymbolicTraits:CPFontBoldTrait];
+    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -72,7 +85,8 @@ var _CPFonts                = {},
 */
 + (CPFont)systemFontOfSize:(CPSize)aSize
 {
-    return _CPCachedFont(_CPFontSystemFontFace, aSize, NO) || [[CPFont alloc] _initWithName:_CPFontSystemFontFace size:aSize bold:NO];
+    var fontDescriptor = [_CPSystemFontDescriptor fontDescriptorWithSize:aSize];
+    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -82,27 +96,18 @@ var _CPFonts                = {},
 */
 + (CPFont)boldSystemFontOfSize:(CPSize)aSize
 {
-    return _CPCachedFont(_CPFontSystemFontFace, aSize, YES) || [[CPFont alloc] _initWithName:_CPFontSystemFontFace size:aSize bold:YES];
+    var fontDescriptor = [_CPBoldSystemFontDescriptor fontDescriptorWithSize:aSize];
+    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
-/*  FIXME Font Descriptor
-    @ignore
-*/
-- (id)_initWithName:(CPString)aName size:(float)aSize bold:(BOOL)isBold
-{   
+- (id)_initWithFontDescriptor:(CPFontDescriptor)fontDescriptor
+{
     self = [super init];
-    
     if (self)
     {
-        _name = aName;
-        _size = aSize;
-        _isBold = isBold;
-        
-        _cssString = _CPCreateCSSString(_name, _size, _isBold);
-        
-        _CPFonts[_cssString] = self;
+        _fontDescriptor = fontDescriptor;
+        _CPFonts[[fontDescriptor cssString]] = self;
     }
-    
     return self;
 }
 
@@ -111,7 +116,7 @@ var _CPFonts                = {},
 */
 - (float)size
 {
-    return _size;
+    return [_fontDescriptor pointSize];
 }
 
 /*!
@@ -119,7 +124,7 @@ var _CPFonts                = {},
 */
 - (CPString)cssString
 {
-    return _cssString;
+    return [_fontDescriptor cssString];
 }
 
 /*!
@@ -127,7 +132,15 @@ var _CPFonts                = {},
 */
 - (CPString)familyName
 {
-    return _name;
+    return [_fontDescriptor objetForKey:CPFontNameAttribute];
+}
+
+/*!
+    Returns the font descriptor.
+*/
+- (CPFontDescriptor)fontDescriptor
+{
+    return _fontDescriptor;
 }
 
 - (BOOL)isEqual:(id)anObject
@@ -142,9 +155,7 @@ var _CPFonts                = {},
 
 @end
 
-var CPFontNameKey   = @"CPFontNameKey",
-    CPFontSizeKey   = @"CPFontSizeKey",
-    CPFontIsBoldKey = @"CPFontIsBoldKey";
+var CPFontDescriptorKey = @"CPFontDescriptorKey";
 
 @implementation CPFont (CPCoding)
 
@@ -155,9 +166,7 @@ var CPFontNameKey   = @"CPFontNameKey",
 */
 - (id)initWithCoder:(CPCoder)aCoder
 {
-    return [self _initWithName:[aCoder decodeObjectForKey:CPFontNameKey]
-        size:[aCoder decodeFloatForKey:CPFontSizeKey]
-        bold:[aCoder decodeBoolForKey:CPFontIsBoldKey]];
+    return [self _initWithFontDescriptor:[aCoder decodeObjectForKey:CPFontDescriptorKey]];
 }
 
 /*!
@@ -166,9 +175,6 @@ var CPFontNameKey   = @"CPFontNameKey",
 */
 - (void)encodeWithCoder:(CPCoder)aCoder
 {
-    [aCoder encodeObject:_name forKey:CPFontNameKey];
-    [aCoder encodeFloat:_size forKey:CPFontSizeKey];
-    [aCoder encodeBool:_isBold forKey:CPFontIsBoldKey];
+    [aCoder encodeObject:_fontDescriptor forKey:CPFontDescriptorKey];
 }
-
 @end
