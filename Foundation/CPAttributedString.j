@@ -93,6 +93,15 @@
     return self;
 }
 
+/*!
+    Creates a new attributed string.
+    @return a new CPAttributedString containing an empty string.
+*/
+- (id)init
+{
+    return [self initWithString:"" attributes:nil];
+}
+
 //Retrieving Character Information
 /*!
     Returns a string containing the receiver's character data without
@@ -134,7 +143,9 @@
     var sortFunction = function(index, entry)
     {
         //index is the character index we're searching for, while range is the actual range entry we're comparing against
-        if (CPLocationInRange(index, entry.range))
+        if (index == 0 && CPEmptyRange(entry.range)) // special case for empty content
+            return CPOrderedSame;
+        else if (CPLocationInRange(index, entry.range))
             return CPOrderedSame;
         else if (CPMaxRange(entry.range) <= index)
             return CPOrderedDescending;
@@ -505,32 +516,40 @@
 
     if (!aString)
         aString = "";
-        
-    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
-        startingRangeEntry = _rangeEntries[startingIndex],
-        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)],
-        endingRangeEntry = _rangeEntries[endingIndex],
-        additionalLength = aString.length - aRange.length;
 
     _string = _string.substring(0, aRange.location) + aString + _string.substring(CPMaxRange(aRange));
 
-    if (startingIndex == endingIndex)
-        startingRangeEntry.range.length += additionalLength;
+    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
+        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
+    
+    if (startingIndex == CPNotFound || endingIndex == CPNotFound)
+    {
+         [self _coalesceRangeEntriesFromIndex:aRange.location toIndex:aRange.location + [aString length]];
+    }
     else
     {
-        endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
-        endingRangeEntry.range.location = CPMaxRange(aRange);
+       var startingRangeEntry = _rangeEntries[startingIndex],
+            endingRangeEntry = _rangeEntries[endingIndex],
+            additionalLength = aString.length - aRange.length;
 
-        startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
+        if (startingIndex == endingIndex)
+            startingRangeEntry.range.length += additionalLength;
+        else
+        {
+            endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
+            endingRangeEntry.range.location = CPMaxRange(aRange);
 
-        _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
+            startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
+
+            _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
+        }
+
+        endingIndex = startingIndex + 1;
+
+        while(endingIndex < _rangeEntries.length)
+            _rangeEntries[endingIndex++].range.location+=additionalLength;
     }
-
-    endingIndex = startingIndex + 1;
-    
-    while(endingIndex < _rangeEntries.length)
-        _rangeEntries[endingIndex++].range.location+=additionalLength;
-    
+        
     [self endEditing];
 }
 
@@ -540,7 +559,45 @@
 */
 - (void)deleteCharactersInRange:(CPRange)aRange
 {
-    [self replaceCharactersInRange:aRange withString:nil];
+    [self beginEditing];
+    
+    if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+        [CPException raise:CPRangeException 
+                    reason:"-deleteCharactersInRange invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
+
+    
+    _string = _string.substring(0, aRange.location) + _string.substring(CPMaxRange(aRange));
+    
+    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
+        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
+        
+    if (startingIndex == CPNotFound || endingIndex == CPNotFound)
+    {
+         [self _coalesceRangeEntriesFromIndex:aRange.location toIndex:_string.length];
+    }
+    else
+    {
+        var startingRangeEntry = _rangeEntries[startingIndex],
+        endingRangeEntry = _rangeEntries[endingIndex];
+
+        if (startingIndex == endingIndex)
+        startingRangeEntry.range.length -= aRange.length;
+        else
+        {
+            endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
+            endingRangeEntry.range.location = CPMaxRange(aRange);
+            
+            startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
+            
+            _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
+        }
+
+        endingIndex = startingIndex + 1;
+
+        while(endingIndex < _rangeEntries.length)
+        _rangeEntries[endingIndex++].range.location -= aRange.length;
+    }
+    [self endEditing];
 }
 
 //Changing Attributes
@@ -560,12 +617,15 @@
     [self beginEditing];
 
     var startingEntryIndex = [self _indexOfRangeEntryForIndex:aRange.location splitOnMaxIndex:YES],
-        endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES],
-        current = startingEntryIndex;
+        endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES];
+
+    if (startingEntryIndex == CPNotFound)
+        startingEntryIndex = 0;
 
     if (endingEntryIndex == CPNotFound)
         endingEntryIndex = _rangeEntries.length;
 
+    var current = startingEntryIndex;
     while (current < endingEntryIndex)
         _rangeEntries[current++].attributes = [aDictionary copy];
 
@@ -590,12 +650,15 @@
     [self beginEditing];
 
     var startingEntryIndex = [self _indexOfRangeEntryForIndex:aRange.location splitOnMaxIndex:YES],
-        endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES],
-        current = startingEntryIndex;
+        endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES];
 
+    if (startingEntryIndex == CPNotFound)
+        startingEntryIndex = 0;
+        
     if (endingEntryIndex == CPNotFound)
         endingEntryIndex = _rangeEntries.length;
 
+    var current = startingEntryIndex;
     while (current < endingEntryIndex)
     {
         var keys = [aDictionary allKeys],
