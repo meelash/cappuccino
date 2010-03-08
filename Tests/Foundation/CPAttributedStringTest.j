@@ -69,6 +69,17 @@ var sharedObject = [CPObject new];
              message:"testIinitWithString_attributes: value for key 'foo' expected:" + "bar" + " actual:" + [[string attributesAtIndex:0 effectiveRange:nil] objectForKey:@"foo"]];
 }
 
+- (void)testInit
+{
+    var aString = [[CPAttributedString alloc] init];
+    [self assertNotNull:aString];
+    [self assertTrue:([aString length] == 0)];
+    var range = CPMakeRange(0,0);
+    var attrib = [aString attributesAtIndex:0 effectiveRange:range];
+    [self assertNotNull:attrib];
+    [self assertTrue:([[attrib allKeys] count] == 0)];
+}
+
 //Retrieving Character Information
 - (void)testString
 {
@@ -222,6 +233,26 @@ var sharedObject = [CPObject new];
     testAttributesAtIndexWithValues(string, 21, {a:2, b:"baz", c:sharedObject}, self);
     testAttributesAtIndexWithValues(string, 40, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
     testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
+    
+    /* test on an empty string */
+    string = [[CPAttributedString alloc] initWithString:""];
+    var range = CPMakeRange(0, [string length]);
+    [string replaceCharactersInRange:range withString:@"foo"];
+    [self assertTrue:[string string]==="foo" message:"inserting foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
+    
+    range = CPMakeRange([string length], 0);
+    [string replaceCharactersInRange:range withString:@"bar"];
+    [self assertTrue:[string string]==="foobar" message:"inserting bar after foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
+    
+    string = [[CPAttributedString alloc] initWithString:""];
+    var range = CPMakeRange(0, [string length]);
+    
+    [string replaceCharactersInRange:range withString:@"bar"];
+    [self assertTrue:[string string]==="bar" message:"inserting bar using range "+CPStringFromRange(range)+" produced: "+[string string]];
+    
+    range = CPMakeRange(0, 0);
+    [string replaceCharactersInRange:range withString:@"foo"];
+    [self assertTrue:[string string]==="foobar" message:"inserting foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
 }
 
 //- (void)deleteCharactersInRange:(CPRange)aRange
@@ -523,6 +554,11 @@ var sharedObject = [CPObject new];
     
     [self assertTrue:value===1 message:"expected value to be '37', was: "+value];
     [self assertTrue:CPEqualRanges(range, CPMakeRange(11, 1)) message:"expected key to be valid across {11, 1}, was: "+CPStringFromRange(range)];
+    
+    /* test on an empty string */
+    string = [[CPAttributedString alloc] initWithString:""];
+    [string insertAttributedString:[[CPAttributedString alloc] initWithString: @"foo"] atIndex:0];
+    [self assertTrue:[string string]==="foo" message:"inserting foo produced: "+[string string]];
 }
 
 //- (void)replaceCharactersInRange:(CPRange)aRange withAttributedString:(CPAttributedString)aString
@@ -540,6 +576,15 @@ var sharedObject = [CPObject new];
             
     [self assertTrue:value===1 message:"expected value to be '1', was: "+value];
     [self assertTrue:CPEqualRanges(range, CPMakeRange(32, 13)) message:"expected key to be valid across {32, 13}, was: "+CPStringFromRange(range)];
+    
+    string = [[CPAttributedString alloc] initWithString:""];    
+    range = CPMakeRange(0, 0);
+    [string replaceCharactersInRange:range withAttributedString:[[CPAttributedString alloc] initWithString:@"foo"]];
+    [self assertTrue:[string string]==="foo" message:"inserting foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
+    
+    range = CPMakeRange([string length], 0);
+    [string replaceCharactersInRange:range withAttributedString:[[CPAttributedString alloc] initWithString:@"bar"]];
+    [self assertTrue:[string string]==="foobar" message:"inserting bar after foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
 }
 
 //- (void)setAttributedString:(CPAttributedString)aString
