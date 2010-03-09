@@ -58,12 +58,14 @@ var _CPFonts                    = {},
 /*!
     Returns a font with the specified descriptor and size.
     @param aDescriptor a font descriptor
-    @param aSize the size of the font (in points), will overwrite descritor font size if present.
+    @param aSize the size of the font (in points), if \c aSize is 0.0 use descriptor font size, else change to \c aSize
     @return the requested font
 */
 + (CPFont)fontWithDescriptor:(CPFontDescriptor)aDescriptor size:(float)aSize
 {
-    var fontDescriptor = [aDescriptor fontDescriptorWithSize:aSize];
+    var fontDescriptor = aDescriptor;
+    if (aSize != 0.0)
+        fontDescriptor = [fontDescriptor fontDescriptorWithSize:aSize];
     return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
