@@ -134,7 +134,7 @@ var _CPFonts                    = {},
 */
 - (CPString)familyName
 {
-    return [_fontDescriptor objetForKey:CPFontNameAttribute];
+    return [_fontDescriptor objectForKey:CPFontNameAttribute];
 }
 
 /*!
