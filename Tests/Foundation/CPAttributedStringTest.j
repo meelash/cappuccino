@@ -577,10 +577,19 @@ var sharedObject = [CPObject new];
     [self assertTrue:value===1 message:"expected value to be '1', was: "+value];
     [self assertTrue:CPEqualRanges(range, CPMakeRange(32, 13)) message:"expected key to be valid across {32, 13}, was: "+CPStringFromRange(range)];
     
+    /* test on an empty string */
     string = [[CPAttributedString alloc] initWithString:""];    
     range = CPMakeRange(0, 0);
-    [string replaceCharactersInRange:range withAttributedString:[[CPAttributedString alloc] initWithString:@"foo"]];
+    var attributes = [CPDictionary dictionaryWithObject:@"value" forKey:@"key"];
+    [string replaceCharactersInRange:range withAttributedString:[[CPAttributedString alloc] initWithString:@"foo" attributes:[attributes copy]]];
+    
     [self assertTrue:[string string]==="foo" message:"inserting foo using range "+CPStringFromRange(range)+" produced: "+[string string]];
+    
+    var effectiveRange = CPMakeRange(0, 0),
+        assignedAttributes = [string attributesAtIndex:0 effectiveRange:effectiveRange];
+    
+    [self assertTrue:[attributes isEqualToDictionary:assignedAttributes] message:"attributes differt should be { key = \"value\" } get "+[assignedAttributes description]];
+    [self assertTrue:CPEqualRanges(effectiveRange, CPMakeRange(0,3)) message:"effectiveRange should be {0, 3} get "+CPStringFromRange(effectiveRange)];
     
     range = CPMakeRange([string length], 0);
     [string replaceCharactersInRange:range withAttributedString:[[CPAttributedString alloc] initWithString:@"bar"]];
@@ -593,7 +602,11 @@ var sharedObject = [CPObject new];
     var string = [[CPAttributedString alloc] initWithString:"HELLO THERE"];
     [string setAttributedString:[self stringForTesting]];
     
-    [self assertTrue:[[self stringForTesting] isEqual:string] message:"setAttributedString should have made strings equal, but they were not"];    
+    [self assertTrue:[[self stringForTesting] isEqual:string] message:"setAttributedString should have made strings equal, but they were not"];
+    
+    string = [[CPAttributedString alloc] initWithString:""];
+    [string setAttributedString:[self stringForTesting]];
+    [self assertTrue:[[self stringForTesting] isEqual:string] message:"setAttributedString should have made strings equal, but they were not"];
 }
 
 @end
