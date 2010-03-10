@@ -771,7 +771,7 @@
     }
 
     //necessary?
-    //[self _coalesceRangeEntriesFromIndex:startingEntryIndex toIndex:startingEntryIndex+rangeEntries.length];
+    [self _coalesceRangeEntriesFromIndex:0 toIndex:_rangeEntries.length];
 
     [self endEditing];
 }
@@ -834,7 +834,24 @@
 
 - (void)_coalesceRangeEntriesFromIndex:(unsigned)start toIndex:(unsigned)end
 {
-    var current = start;
+    var current;
+    if (_string.length)
+    {
+        /* remove empty ranges created with an empty string */
+        current = 0;
+        var last = _rangeEntries.length;
+        while (current < last)
+        {
+            if (CPEmptyRange(_rangeEntries[current].range))
+            {
+                _rangeEntries.splice(current, 1);
+                last--;
+            }
+            else
+                current++;
+        }
+    }
+    current = start;
 
     if (end >= _rangeEntries.length)
         end = _rangeEntries.length -1;
