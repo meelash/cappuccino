@@ -34,15 +34,24 @@
 CPNoFontChangeAction    = 0;
 CPViaPanelFontAction    = 1;
 CPAddTraitFontAction    = 2;
-CPRemoveTraitFontAction = 3;
-CPSizeUpFontAction      = 4;
-CPSizeDownFontAction    = 5;
+CPSizeUpFontAction      = 3;
+CPSizeDownFontAction    = 4;
+CPHeavierFontAction     = 5;
+CPLighterFontAction     = 6;
+CPRemoveTraitFontAction = 7;
 
 /*
     Font Traits Masks
 */
-CPItalicFontMask    = 0x01;
-CPBoldFontMask      = 0x02;
+CPItalicFontMask    = 0x00000001;
+CPBoldFontMask      = 0x00000002;
+CPUnboldFontMask    = 0x00000004;
+
+CPExpandedFontMask  = 0x00000020;
+CPCompensedFontMask = 0x00000040;
+CPSmallCapsFontMask = 0x00000080;
+
+CPUnitalicFontMask  = 0x01000000;
 
 
 var CPSharedFontManager     = nil,
@@ -225,6 +234,21 @@ var _CPLexicalFontWeights = nil,
     if (fontTrait & CPItalicFontMask)
         symbolicTrait |= CPFontItalicTrait;
 
+    if (fontTrait & CPUnboldFontMask)
+        symbolicTrait &= ~CPFontBoldTrait;
+        
+    if (fontTrait & CPUnitalicFontMask)
+        symbolicTrait &= ~CPFontItalicTrait;
+        
+    if (fontTrait & CPExpandedFontMask))
+        symbolicTrait |= CPFontExpandedTrait;
+        
+    if (fontTrait & CPCompensedFontMask))
+        symbolicTrait |= CPFontCondensedTrait;
+    
+    if (fontTrait & CPSmallCapsFontMask))
+        symbolicTrait |= CPFontSmallCapsTrait;
+
     if (![attributes containsKey:CPFontTraitsAttribute])
         [attributes setObject:[CPDictionary dictionaryWithObject:[CPNumber numberWithUnsignedInt:symbolicTrait] forKey:CPFontSymbolicTrait] forKey:CPFontTraitsAttribute];
     else
@@ -238,11 +262,20 @@ var _CPLexicalFontWeights = nil,
     var attributes = [[[aFont fontDescriptor] fontAttributes] copy],
         symbolicTrait = [[aFont fontDescriptor] symbolicTraits];
   
-    if (fontTrait & CPBoldFontMask)
+    if ((fontTrait & CPBoldFontMask) || (fontTrait & CPUnboldFontMask))
         symbolicTrait &= ~CPFontBoldTrait;
     
-    if (fontTrait & CPItalicFontMask)
+    if ((fontTrait & CPItalicFontMask) || (fontTrait & CPUnitalicFontMask))
         symbolicTrait &= ~CPFontItalicTrait;
+        
+    if (fontTrait & CPExpandedFontMask))
+        symbolicTrait &= ~CPFontExpandedTrait;
+        
+    if (fontTrait & CPCompensedFontMask))
+        symbolicTrait &= ~CPFontCondensedTrait;
+
+    if (fontTrait & CPSmallCapsFontMask))
+        symbolicTrait &= ~CPFontSmallCapsTrait;
 
     if (![attributes containsKey:CPFontTraitsAttribute])
         [attributes setObject:[CPDictionary dictionaryWithObject:[CPNumber numberWithUnsignedInt:symbolicTrait] forKey:CPFontSymbolicTrait] forKey:CPFontTraitsAttribute];
@@ -292,6 +325,16 @@ var _CPLexicalFontWeights = nil,
             newFont = [self convertFont:aFont toHaveTrait:_currentFontTrait];
             break;
 
+        case CPSizeUpFontAction:
+            newFont = [self convertFont:aFont toSize:[aFont size] + 1.0]; /* any limit ? */
+            break;
+            
+        case CPSizeDownFontAction:
+            if ([aFont size] > 1)
+                newFont = [self convertFont:aFont toSize:[aFont size] - 1.0];
+            /* else CPBeep() :-p */
+            break;
+            
         default:
             CPLog.trace(@"-["+[self className]+" "+_cmd+"] unsupporter font action: "+_fontAction+" aFont unchanged");
             newFont = aFont;

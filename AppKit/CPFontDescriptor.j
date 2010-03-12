@@ -71,11 +71,13 @@ CPFontFamilyClassMask = 0xF0000000;
 /*
     Typeface information
 */
-CPFontItalicTrait = (1 << 0);
-CPFontBoldTrait = (1 << 1);
+CPFontItalicTrait       = (1 << 0);
+CPFontBoldTrait         = (1 << 1);
+CPFontExpandedTrait     = (1 << 5); /* TODO: CCS 3 font-stretch */
+CPFontCondensedTrait    = (1 << 6);
 
-CPFontExpandedTrait = (1 << 5);     /* TODO: CCS 3 font-stretch */
-CPFontCondensedTrait = (1 << 6);
+CPFontSmallCapsTrait    = (1 << 7);
+
 
 /*! 
     @ingroup appkit
@@ -260,9 +262,16 @@ var _wrapNameRegEx = new RegExp(/(\w+\s+\w+)(,*)/g);
     }
     return aName;
 }
+- (CPString)fontVariantCSSString
+{
+    if ([self symbolicTraits] & CPFontSmallCapsTrait)
+        return @"small-caps";
+    return @"normal";
+}
 - (CPString)cssString
 {
-    return [CPString stringWithString:[self fontStyleCSSString] + " normal " /* font-variant */
+    return [CPString stringWithString:[self fontStyleCSSString] + " "
+                                + [self fontVariantCSSString] + " "
                                 + [self fontWeightCSSString] + " "
                                 + [self fontSizeCSSString] + " "
                                 + [self fontFamilyCSSString]]; 
