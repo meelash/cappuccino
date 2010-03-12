@@ -240,13 +240,13 @@ var _CPLexicalFontWeights = nil,
     if (fontTrait & CPUnitalicFontMask)
         symbolicTrait &= ~CPFontItalicTrait;
         
-    if (fontTrait & CPExpandedFontMask))
+    if (fontTrait & CPExpandedFontMask)
         symbolicTrait |= CPFontExpandedTrait;
         
-    if (fontTrait & CPCompensedFontMask))
+    if (fontTrait & CPCompensedFontMask)
         symbolicTrait |= CPFontCondensedTrait;
     
-    if (fontTrait & CPSmallCapsFontMask))
+    if (fontTrait & CPSmallCapsFontMask)
         symbolicTrait |= CPFontSmallCapsTrait;
 
     if (![attributes containsKey:CPFontTraitsAttribute])
@@ -268,13 +268,13 @@ var _CPLexicalFontWeights = nil,
     if ((fontTrait & CPItalicFontMask) || (fontTrait & CPUnitalicFontMask))
         symbolicTrait &= ~CPFontItalicTrait;
         
-    if (fontTrait & CPExpandedFontMask))
+    if (fontTrait & CPExpandedFontMask)
         symbolicTrait &= ~CPFontExpandedTrait;
         
-    if (fontTrait & CPCompensedFontMask))
+    if (fontTrait & CPCompensedFontMask)
         symbolicTrait &= ~CPFontCondensedTrait;
 
-    if (fontTrait & CPSmallCapsFontMask))
+    if (fontTrait & CPSmallCapsFontMask)
         symbolicTrait &= ~CPFontSmallCapsTrait;
 
     if (![attributes containsKey:CPFontTraitsAttribute])
