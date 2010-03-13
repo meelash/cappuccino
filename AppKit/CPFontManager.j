@@ -70,7 +70,7 @@ var _CPLexicalFontWeights = nil,
     CPArray _availableFonts;
     id _delegate;
     
-    CPMenu _menu;
+    CPMenu _fontMenu;
     
     SEL _action;
     int _fontAction;
@@ -350,7 +350,7 @@ var _CPLexicalFontWeights = nil,
 */
 - (void)setFontMenu:(CPMenu)aMenu
 {
-    _menu = aMenu;
+    _fontMenu = aMenu;
 }
 
 /*!
@@ -360,42 +360,42 @@ var _CPLexicalFontWeights = nil,
 */
 - (CPMenu)fontMenu:(BOOL)createIt
 {
-    if (!_menu && createIt)
+    if (!_fontMenu && createIt)
     {
-        _menu = [[CPMenu alloc] initWithTitle:@"Font Menu"];
+        _fontMenu = [[CPMenu alloc] initWithTitle:@"Font Menu"];
         
-        var menuItem = [_menu addItemWithTitle:@"Show Fonts" action:@selector(orderFrontFontPanel:) keyEquivalent:@"t"];
+        var menuItem = [_fontMenu addItemWithTitle:@"Show Fonts" action:@selector(orderFrontFontPanel:) keyEquivalent:@"t"];
         [menuItem setTarget:self];
         
-        menuItem = [_menu addItemWithTitle:@"Italic" action:@selector(addFontTrait:) keyEquivalent:@"i"];
+        menuItem = [_fontMenu addItemWithTitle:@"Italic" action:@selector(addFontTrait:) keyEquivalent:@"i"];
         [menuItem setTag:CPItalicFontMask];
         [menuItem setTarget:self];
         
-        menuItem = [_menu addItemWithTitle:@"Bold" action:@selector(addFontTrait:) keyEquivalent:@"b"];
+        menuItem = [_fontMenu addItemWithTitle:@"Bold" action:@selector(addFontTrait:) keyEquivalent:@"b"];
         [menuItem setTag:CPBoldFontMask];
         [menuItem setTarget:self];
         
-        [_menu addItemWithTitle:@"Underline" action:@selector(underline:) keyEquivalent:@"u"];
-        [_menu addItem:[CPMenuItem separatorItem]];
+        [_fontMenu addItemWithTitle:@"Underline" action:@selector(underline:) keyEquivalent:@"u"];
+        [_fontMenu addItem:[CPMenuItem separatorItem]];
         
-        menuItem = [_menu addItemWithTitle:@"Bigger" action:@selector(modifyFont:) keyEquivalent:@"+"];
+        menuItem = [_fontMenu addItemWithTitle:@"Bigger" action:@selector(modifyFont:) keyEquivalent:@"+"];
         [menuItem setTag:CPSizeUpFontAction];
         
-        menuItem = [_menu addItemWithTitle:@"Smaller" action:@selector(modifyFont:) keyEquivalent:@"-"];
+        menuItem = [_fontMenu addItemWithTitle:@"Smaller" action:@selector(modifyFont:) keyEquivalent:@"-"];
         [menuItem setTag:CPSizeDownFontAction];
-        [_menu addItem:[CPMenuItem separatorItem]];
+        [_fontMenu addItem:[CPMenuItem separatorItem]];
         
         /* Finish me ... */
 
-        [_menu addItemWithTitle:@"Show Colors" action:@selector(orderFrontColorPanel:) keyEquivalent:@"C"];
-        [_menu addItem:[CPMenuItem separatorItem]];
+        [_fontMenu addItemWithTitle:@"Show Colors" action:@selector(orderFrontColorPanel:) keyEquivalent:@"C"];
+        [_fontMenu addItem:[CPMenuItem separatorItem]];
         
-        menuItem = [_menu addItemWithTitle:@"Copy Style" action:@selector(copyFont:) keyEquivalent:@"C"];
+        menuItem = [_fontMenu addItemWithTitle:@"Copy Style" action:@selector(copyFont:) keyEquivalent:@"C"];
         [menuItem setKeyEquivalentModifierMask:CPAlternateKeyMask];
-        menuItem = [_menu addItemWithTitle:@"Paste Style" action:@selector(pasteFont:) keyEquivalent:@"V"];
+        menuItem = [_fontMenu addItemWithTitle:@"Paste Style" action:@selector(pasteFont:) keyEquivalent:@"V"];
         [menuItem setKeyEquivalentModifierMask:CPAlternateKeyMask];
     }
-    return _menu;
+    return _fontMenu;
 }
 
 /*!
