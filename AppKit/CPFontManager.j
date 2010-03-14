@@ -223,6 +223,13 @@ var _CPLexicalFontWeights = nil,
     _action = anAction;
 }
 
+/*!
+    Convert a font to have the specified Font traits. The font is unchanged expect for the specified Font traits.
+    Using CPUnboldFontMask or CPUnitalicFontMask will respectively remove Bold and Italic traits.
+    @param aFont The font to convert.
+    @param fontTrait The new font traits mask.
+    @result The converted font or \c aFont if the conversion failed.
+*/
 - (CPFont)convertFont:(CPFont)aFont toHaveTrait:(CPFontTraitMask)fontTrait
 {
     var attributes = [[[aFont fontDescriptor] fontAttributes] copy],
@@ -234,18 +241,18 @@ var _CPLexicalFontWeights = nil,
     if (fontTrait & CPItalicFontMask)
         symbolicTrait |= CPFontItalicTrait;
 
-    if (fontTrait & CPUnboldFontMask)
+    if (fontTrait & CPUnboldFontMask) /* FIXME: this only change CPFontSymbolicTrait what about CPFontWeightTrait */
         symbolicTrait &= ~CPFontBoldTrait;
-        
+
     if (fontTrait & CPUnitalicFontMask)
         symbolicTrait &= ~CPFontItalicTrait;
-        
+
     if (fontTrait & CPExpandedFontMask)
         symbolicTrait |= CPFontExpandedTrait;
-        
+
     if (fontTrait & CPCompensedFontMask)
         symbolicTrait |= CPFontCondensedTrait;
-    
+
     if (fontTrait & CPSmallCapsFontMask)
         symbolicTrait |= CPFontSmallCapsTrait;
 
@@ -257,12 +264,18 @@ var _CPLexicalFontWeights = nil,
     return [CPFont fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
 }
 
+/*!
+    Convert a font to not have the specified Font traits. The font is unchanged expect for the specified Font traits.
+    @param aFont The font to convert.
+    @param fontTrait The font traits mask to remove.
+    @result The converted font or \c aFont if the conversion failed.
+*/
 - (CPFont)convertFont:(CPFont)aFont toNotHaveTrait:(CPFontTraitMask)fontTrait
 {
     var attributes = [[[aFont fontDescriptor] fontAttributes] copy],
         symbolicTrait = [[aFont fontDescriptor] symbolicTraits];
   
-    if ((fontTrait & CPBoldFontMask) || (fontTrait & CPUnboldFontMask))
+    if ((fontTrait & CPBoldFontMask) || (fontTrait & CPUnboldFontMask)) /* FIXME: see convertFont:toHaveTrait: about CPFontWeightTrait */
         symbolicTrait &= ~CPFontBoldTrait;
     
     if ((fontTrait & CPItalicFontMask) || (fontTrait & CPUnitalicFontMask))
@@ -285,6 +298,12 @@ var _CPLexicalFontWeights = nil,
     return [CPFont fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
 }
 
+/*!
+    Convert a font to have specified size. The font is unchanged expect for the specified size.
+    @param aFont The font to convert.
+    @param aSize The new font size.
+    @result The converted font or \c aFont if the conversion failed.
+*/
 - (CPFont)convertFont:(CPFont)aFont toSize:(float)aSize
 {
     return [CPFont fontWithDescriptor:[aFont fontDescriptor] size:aSize];
