@@ -20,22 +20,22 @@
 
 - (void)testSystemFontCSSString
 {
-    [self assert:[_systemFont cssString] equals:@"15px Arial, sans-serif"];
+    [self assert:[_systemFont cssString] equals:@"normal normal normal 15px Arial, sans-serif"];
 }
 
 - (void)testBoldSystemFontCSSString
 {
-    [self assert:[_boldSystemFont cssString] equals:@"bold 15px Arial, sans-serif"];
+    [self assert:[_boldSystemFont cssString] equals:@"normal normal bold 15px Arial, sans-serif"];
 }
 
 - (void)testCustomFontCSSString
 {
-    [self assert:[_customFont cssString] equals:@"30px \"Marker Felt\", \"Lucida Grande\", \"Helvetica\", Arial, sans-serif"];
+    [self assert:[_customFont cssString] equals:@"normal normal normal 30px \"Marker Felt\", \"Lucida Grande\", Helvetica"];
 }
 
 - (void)testBoldCustomFontCSSString
 {
-    [self assert:[_boldCustomFont cssString] equals:@"bold 30px \"Helvetica\", Arial, sans-serif"];
+    [self assert:[_boldCustomFont cssString] equals:@"normal normal bold 30px Helvetica"];
 }
 
 - (void)testIsEqual
