@@ -411,7 +411,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     if (CPEmptyRange(_selectionRange) && _selectionRange.location > 0)
         changedRange = CPMakeRange(_selectionRange.location - 1, 1);
     else
-        changedRange = CPCopyRange(_selectionRange);
+        changedRange = _selectionRange;
 
     if (![self shouldChangeTextInRange:changedRange replacementString:@""])
         return;
@@ -509,8 +509,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     }
     else
     {
-        var range = CPMakeRange(0, [_textStorage length]);
-        [self setFont:[sender convertFont:oldFont] range:range];
+        [self setFont:[sender convertFont:oldFont] range:CPMakeRange(0, [_textStorage length])];
     }
 }
 
