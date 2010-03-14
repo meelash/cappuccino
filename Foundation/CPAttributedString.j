@@ -519,19 +519,21 @@
 
     _string = _string.substring(0, aRange.location) + aString + _string.substring(CPMaxRange(aRange));
 
-    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
+    if (_string.length)
+    {
+        var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
         endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
-    
-    if (startingIndex == CPNotFound || endingIndex == CPNotFound)
-    {
-         [self _coalesceRangeEntriesFromIndex:aRange.location toIndex:aRange.location + [aString length]];
-    }
-    else
-    {
-       var startingRangeEntry = _rangeEntries[startingIndex],
+
+        if (startingIndex == CPNotFound)
+            startingIndex = 0;
+
+        if (endingIndex == CPNotFound)
+            endingIndex = _rangeEntries.length - 1;
+
+        var startingRangeEntry = _rangeEntries[startingIndex],
             endingRangeEntry = _rangeEntries[endingIndex],
             additionalLength = aString.length - aRange.length;
-
+        
         if (startingIndex == endingIndex)
             startingRangeEntry.range.length += additionalLength;
         else
@@ -549,7 +551,10 @@
         while(endingIndex < _rangeEntries.length)
             _rangeEntries[endingIndex++].range.location+=additionalLength;
     }
-        
+    else
+    {
+        _rangeEntries = [makeRangeEntry(CPMakeRange(0, 0), [CPDictionary dictionary])];
+    }
     [self endEditing];
 }
 
@@ -565,37 +570,41 @@
         [CPException raise:CPRangeException 
                     reason:"-deleteCharactersInRange invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
 
-    
     _string = _string.substring(0, aRange.location) + _string.substring(CPMaxRange(aRange));
-    
-    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
-        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
-        
-    if (startingIndex == CPNotFound || endingIndex == CPNotFound)
+
+    if (_string.length)
     {
-         [self _coalesceRangeEntriesFromIndex:aRange.location toIndex:_string.length];
-    }
-    else
-    {
+        var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
+            endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
+
+        if (startingIndex == CPNotFound)
+            startingIndex = 0;
+
+        if (endingIndex == CPNotFound)
+            endingIndex = _rangeEntries.length - 1;
+
         var startingRangeEntry = _rangeEntries[startingIndex],
-        endingRangeEntry = _rangeEntries[endingIndex];
+            endingRangeEntry = _rangeEntries[endingIndex];
 
         if (startingIndex == endingIndex)
-        startingRangeEntry.range.length -= aRange.length;
+            startingRangeEntry.range.length -= aRange.length;
         else
         {
             endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
             endingRangeEntry.range.location = CPMaxRange(aRange);
-            
+
             startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
-            
+
             _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
         }
-
         endingIndex = startingIndex + 1;
 
         while(endingIndex < _rangeEntries.length)
-        _rangeEntries[endingIndex++].range.location -= aRange.length;
+            _rangeEntries[endingIndex++].range.location -= aRange.length;
+    }
+    else
+    {
+        _rangeEntries = [makeRangeEntry(CPMakeRange(0, 0), [CPDictionary dictionary])];
     }
     [self endEditing];
 }

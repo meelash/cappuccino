@@ -269,8 +269,20 @@ var sharedObject = [CPObject new];
     testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
 
     [string deleteCharactersInRange:CPMakeRange(0, [string length])];
-
+    [self assertTrue:string._rangeEntries.length == 1 message:"string._rangeEntries.length should be 1 get "+string._rangeEntries.length];
     [self assertTrue:[string isEqual:[[CPAttributedString alloc] initWithString:""]] message:"emptry string was not equal: "+[string string]];
+    
+    var attribs = [CPDictionary dictionaryWithObject:@"value"  forKey:@"key"];
+    [string replaceCharactersInRange:CPMakeRange(0,0) withAttributedString:[[CPAttributedString alloc] initWithString:@"F" attributes:attribs]];
+    [string replaceCharactersInRange:CPMakeRange(1,0) withAttributedString:[[CPAttributedString alloc] initWithString:@"O" attributes:attribs]];
+    [string replaceCharactersInRange:CPMakeRange(2,0) withAttributedString:[[CPAttributedString alloc] initWithString:@"O" attributes:attribs]];
+
+    for (var i = 0; i < 3; i++)
+    {
+        var currentAttribute = [string attributesAtIndex:i effectiveRange:nil];
+        [self assertTrue:[currentAttribute isEqualToDictionary:attribs] message:@"attributes are not equals should be { key = \"value\" }  get "+[currentAttribute description]];
+    }
+    [self assertTrue:[string isEqual:[[CPAttributedString alloc] initWithString:"FOO" attributes:attribs]] message:"FOO string was not equal: "+[string string]];
 
     var string = [self stringForTesting];
     
@@ -370,24 +382,24 @@ var sharedObject = [CPObject new];
         range:CPMakeRange(43, 2),
         attributes:[CPDictionary dictionaryWithObjects:[37, "baz", 1, 20, 55, 43] forKeys:["a", "b", "c", "d", "e", "f"]]
     });
-    
+
     var string = [[CPAttributedString alloc] initWithAttributedString:templateString];
-    
+
     [string _coalesceRangeEntriesFromIndex:0 toIndex:string._rangeEntries.length-1];
-            
+
     [self assertTrue:[string isEqual:templateString] message:"string should equal template string but does not."];
-    
+
     [self assertTrue:CPEqualRanges(string._rangeEntries[0].range, CPMakeRange(0, 9)) message:"range 0 should be {0, 9}; was "+CPStringFromRange(string._rangeEntries[0].range)];
     [self assertTrue:CPEqualRanges(string._rangeEntries[1].range, CPMakeRange(9, 11)) message:"range 1 should be {9, 11}; was "+CPStringFromRange(string._rangeEntries[1].range)];
     [self assertTrue:CPEqualRanges(string._rangeEntries[2].range, CPMakeRange(20, 12)) message:"range 2 should be {20, 12}; was "+CPStringFromRange(string._rangeEntries[2].range)];
     [self assertTrue:CPEqualRanges(string._rangeEntries[3].range, CPMakeRange(32, 13)) message:"range 3 should be {32, 13}; was "+CPStringFromRange(string._rangeEntries[3].range)];
 
     var string = [[CPAttributedString alloc] initWithAttributedString:templateString];
-    
+
     [string _coalesceRangeEntriesFromIndex:4 toIndex:7];
 
     [self assertTrue:[string isEqual:templateString] message:"string should equal template string but does not."];
-    
+
     [self assertTrue:CPEqualRanges(string._rangeEntries[0].range, CPMakeRange(0, 4)) message:"range 0 should be {0, 4}; was "+CPStringFromRange(string._rangeEntries[0].range)];
     [self assertTrue:CPEqualRanges(string._rangeEntries[1].range, CPMakeRange(4, 5)) message:"range 1 should be {4, 5}; was "+CPStringFromRange(string._rangeEntries[1].range)];
     [self assertTrue:CPEqualRanges(string._rangeEntries[2].range, CPMakeRange(9, 10)) message:"range 2 should be {9, 10}; was "+CPStringFromRange(string._rangeEntries[2].range)];
