@@ -99,7 +99,6 @@ CPLineMovesUp = 4;
 {
     [_elements addObject:anElement];
     [anElement setTextContainerLine:self];
-    var newRect = CPRectUnion(_frame, anElement._displayFrame);
     _frame = CPRectUnion(_frame, anElement._displayFrame);
     
     _DOMElement.style.width = _frame.size.width + "px";
