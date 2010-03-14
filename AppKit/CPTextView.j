@@ -220,6 +220,9 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (BOOL)shouldChangeTextInRange:(CPRange)aRange replacementString:(CPString)aString
 {
+    if (!_isEditable)
+        return NO;
+        
     var shouldChange = YES;
     if (_delegateRespondsToSelectorMask & kDelegateRespondsTo_textShouldBeginEditing)
         shouldChange = [_delegate textShouldBeginEditing:self];
@@ -227,15 +230,13 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 }
 
 - (void)insertText:(id)aString
-{
-    if (!_isEditable)
-        return;
-    
-    var isAttributed = [aString isKindOfClass:CPAttributedString];
-    var string = (isAttributed)?[aString string]:aString;
+{    
+    var isAttributed = [aString isKindOfClass:CPAttributedString],
+        string = (isAttributed)?[aString string]:aString;
+
     if (![self shouldChangeTextInRange:CPCopyRange(_selectionRange) replacementString:string])
         return;
-    
+
     if (isAttributed)
         [_textStorage replaceCharactersInRange:CPCopyRange(_selectionRange) withAttributedString:aString];
     else
@@ -244,7 +245,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         [_textStorage replaceCharactersInRange:CPCopyRange(_selectionRange) withAttributedString:[[CPAttributedString alloc] initWithString:aString attributes:attributes]];
     }
     [self setSelectedRange:CPMakeRange(_selectionRange.location + [string length], 0)];
-   
+
     [self didChangeText];
 }
 
@@ -405,12 +406,20 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)deleteBackward:(id)sender
 {
-    if (_isEditable)
-    {
-        if (CPEmptyRange(_selectionRange) && _selectionRange.location > 0)
-            [self setSelectedRange:CPMakeRange(_selectionRange.location - 1, 1)];
-        [self insertText:@""];
-    }
+    var changedRange = nil;
+
+    if (CPEmptyRange(_selectionRange) && _selectionRange.location > 0)
+        changedRange = CPMakeRange(_selectionRange.location - 1, 1);
+    else
+        changedRange = CPCopyRange(_selectionRange);
+
+    if (![self shouldChangeTextInRange:changedRange replacementString:@""])
+        return;
+
+    [_textStorage deleteCharactersInRange:CPCopyRange(changedRange)];
+    [self setSelectedRange:CPMakeRange(changedRange.location, 0)];
+
+    [self didChangeText];
 }
 
 - (void)insertLineBreak:(id)sender
@@ -446,6 +455,16 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 }
 
 /* CPText concrete */
+- (void)delete:(id)sender
+{
+    if (![self shouldChangeTextInRange:_selectionRange replacementString:@""])
+        return;
+        
+    [_textStorage deleteCharactersInRange:CPCopyRange(_selectionRange)];
+    [self setSelectedRange:CPMakeRange(_selectionRange.location, 0)];
+    [self didChangeText];
+}
+
 - (void)setFont:(CPFont)font
 {
     _font = font;
@@ -454,9 +473,14 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)setFont:(CPFont)font range:(CPRange)range
 {
+    if (!_isRichText)
+        return;
+
     if (CPMaxRange(range) >= [_textStorage length])
         _font = font;
+
     [_textStorage addAttribute:CPFontAttributeName value:font range:CPCopyRange(range)];
+        
     [self setNeedsLayout];
     [self setNeedsDisplay:YES];
 }
@@ -473,9 +497,6 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)changeFont:(id)sender
 {
-    if (!_isEditable)
-        return;
-
     var attributes = [_textStorage attributesAtIndex:_selectionRange.location effectiveRange:nil],
         oldFont = [attributes objectForKey:CPFontAttributeName];
 
@@ -488,13 +509,14 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     }
     else
     {
-        [self setFont:[sender convertFont:oldFont] range:CPMakeRange(0, [_textStorage length])];
+        var range = CPMakeRange(0, [_textStorage length]);
+        [self setFont:[sender convertFont:oldFont] range:range];
     }
 }
 
 - (void)underline:(id)sender
 {
-    if (!_isEditable)
+    if (![self shouldChangeTextInRange:_selectionRange replacementString:nil])
         return;
 
     if (!CPEmptyRange(_selectionRange))
@@ -512,10 +534,12 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 {
     return 0;
 }
+
 - (void)setUsesFontPanel:(BOOL)flag
 {
     _usesFontPanel = flags;
 }
+
 - (BOOL)usesFontPanel
 {
     return _usesFontPanel;
@@ -532,9 +556,9 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)setTextColor:(CPColor)aColor range:(CPRange)range
 {
-    if (!_isEditable || !_isRichText)
+    if (!_isRichText)
         return;
-        
+
     if (CPMaxRange(range) >= [_textStorage length])
         _textColor = aColor;
 
