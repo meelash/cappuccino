@@ -49,8 +49,7 @@ var kToolbarHeight = 32,
     kBorderSpacing = 6,
     kInnerSpacing = 2,
     kButtonWidth = 32,
-    kButtonHeight = kToolbarHeight - kInnerSpacing,
-    kSampleViewHeight = 80; /* TODO: use a split view */
+    kButtonHeight = kToolbarHeight - kInnerSpacing;
 
 var kTextColorButtonTag = 1,
     kBackgroundColorButtonTag = 2;
