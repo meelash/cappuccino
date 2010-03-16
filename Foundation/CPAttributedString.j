@@ -571,29 +571,44 @@
 
     if (_string.length)
     {
-        var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
-            endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
-
-        if (startingIndex != CPNotFound && endingIndex != CPNotFound)
+        var startingIndex = [self _indexOfEntryWithIndex:aRange.location];
+        if (startingIndex != CPNotFound)
         {
-            var startingRangeEntry = _rangeEntries[startingIndex],
-            endingRangeEntry = _rangeEntries[endingIndex];
+            var startingRangeEntry = _rangeEntries[startingIndex];
             
-            if (startingIndex == endingIndex)
+            if ( (aRange.location - aRange.length >= startingRangeEntry.range.location && CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range))
+                || aRange.length <= startingRangeEntry.range.length && CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range)
+                )
+            {
                 startingRangeEntry.range.length -= aRange.length;
+                startingIndex += 1;
+                while(startingIndex < _rangeEntries.length)
+                    _rangeEntries[startingIndex++].range.location -= aRange.length;
+            }
             else
             {
-                endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
-                endingRangeEntry.range.location = CPMaxRange(aRange);
-                
-                startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
-                
-                _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
+                startingRangeEntry.range.length = aRange.location - startingRangeEntry.range.location;
+                var current = startingIndex + 1,
+                    end = _rangeEntries.length;
+
+                while (current < end)
+                {
+                    if (CPRangeInRange(_rangeEntries[current].range, aRange))
+                    {
+                        _rangeEntries.splice(current,1);
+                        end--;
+                    }
+                    else if (CPMaxRange(aRange) < CPMaxRange(_rangeEntries[current].range))
+                    {
+                        var newRange = CPMakeRange(aRange.location, CPMaxRange(_rangeEntries[current].range) - CPMaxRange(aRange));
+                        _rangeEntries[current].range = newRange;
+                        break;
+                    }
+                }
+                current++;
+                while (current < end)
+                    _rangeEntries[current++].range.location -= aRange.length;
             }
-            endingIndex = startingIndex + 1;
-            
-            while(endingIndex < _rangeEntries.length)
-                _rangeEntries[endingIndex++].range.location -= aRange.length;
         }
     }
     else
