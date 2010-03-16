@@ -593,7 +593,7 @@
 
                 while (current < end)
                 {
-                    if (CPRangeInRange(_rangeEntries[current].range, aRange))
+                    if (CPRangeInRange(aRange, _rangeEntries[current].range))
                     {
                         _rangeEntries.splice(current,1);
                         end--;
