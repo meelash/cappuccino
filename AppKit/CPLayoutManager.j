@@ -23,7 +23,6 @@
 @import "CPTextStorage.j"
 @import "CPTextContainer.j"
 
-
 var _CPLayoutManagerDefaultAttibutes = nil;
 
 @implementation _CPTextFragment :  CPObject
@@ -183,10 +182,10 @@ var _CPLayoutManagerDefaultAttibutes = nil;
         var font = [_cachedAttributes objectForKey:CPFontAttributeName],
             fragmentString = [self string],
             c = [fragmentString length];
+
         for (var i = 0; i < c; i++)
         {
-            /* TODO: implement -[CPFont boundingRectForGlyph:] and cache 'glyphes' bounding rect in CPFont */
-            var size = [[fragmentString substringWithRange:CPMakeRange(i, 1)] sizeWithFont:font];
+            var size = [font boundingRectForGlyph:[fragmentString substringWithRange:CPMakeRange(i, 1)]].size;
             _glyphsSizes.push(size);
         }
     }
@@ -603,7 +602,32 @@ function _fragmentsInRange(aList, aRange)
                 }
                 else
                 {
-                    CPLog.trace(_cmd+" FIXME: delta="+delta+" charRange="+CPStringFromRange(charRange) + " fragment.range="+CPStringFromRange(textFragment._range));
+                    var absRange = CPMakeRange(charRange.location, Math.abs(delta)), 
+                        removeSet = [[CPIndexSet alloc] init];
+
+                    [textFragment divideAtLocation:charRange.location];
+                    var startIndex = [_textFragments indexOfObject:textFragment],                    
+                        i = startIndex+1,
+                        c = _textFragments.length;
+
+                    for (; i < c; i++)
+                    {
+                        if (CPRangeInRange(absRange, _textFragments[i]._range))
+                            [removeSet addIndex:i];
+                        else if (CPMaxRange(absRange) < CPMaxRange(_textFragments[i]._range))
+                        {
+                            var newFragment = [_textFragments[i] divideAtLocation:CPMaxRange(absRange)];
+                            [_textFragments replaceObjectAtIndex:i withObject:newFragment];
+                            break;
+                        }
+                    }
+                    for (; i < c; i++)
+                    {
+                        _textFragments[i]._range.location += delta;
+                        [_textFragments[i] reset];
+                    }
+                    if ([removeSet count])
+                        [_textFragments removeObjectsAtIndexes:removeSet];
                 }
             }
             else
@@ -622,7 +646,7 @@ function _fragmentsInRange(aList, aRange)
                         [_textFragments[i] reset];
                     }
                 }
-                /* divide text fragment if their's new lines inside */
+                /* divide text fragment if there's new lines inside */
                 var current = textFragment;
                 while ([current hasNewline] && ([current string].indexOf('\n') != [current string].length - 1))
                 {
@@ -669,7 +693,7 @@ function _fragmentsInRange(aList, aRange)
                         [_textFragments addObject:newFragment];
                     else
                         [_textFragments insertObject:newFragment atIndex:textFragmentIndex+1];
-                    
+
                     if (newFragment._range.length < invalidatedRange.length)
                     {
                         location += newFragment._range.length;
@@ -679,12 +703,12 @@ function _fragmentsInRange(aList, aRange)
                     {
                         var nextFragment = [newFragment divideAtLocation:location + invalidatedRange.length],
                         newFragmentIndex = [_textFragments indexOfObject:newFragment];
-                        
+
                         if ([_textFragments count] == newFragmentIndex+1)
                             [_textFragments addObject:nextFragment];
                         else
                             [_textFragments insertObject:nextFragment atIndex:newFragmentIndex+1];
-                        
+
                         length = invalidatedRange.length;
                     }
                 }
