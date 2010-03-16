@@ -36,6 +36,7 @@ var _CPFonts                    = {},
 {
     CPFontDescriptor _fontDescriptor;
     CPString _cssString;
+    id _glyphBoundsCache;
 }
 + (void) initialize
 {
@@ -111,6 +112,7 @@ var _CPFonts                    = {},
         _fontDescriptor = fontDescriptor;
         _cssString = [_fontDescriptor cssString];
         _CPFonts[_cssString] = self;
+        _glyphBoundsCache = {};
     }
     return self;
 }
@@ -157,6 +159,17 @@ var _CPFonts                    = {},
     return [CPString stringWithFormat:@"%@ %@ %f pt.", [super description], [self familyName], [self size]];
 }
 
+- (CPRect)boundingRectForGlyph:(CPGlyph)aGlyph
+{
+    var rect = _glyphBoundsCache[aGlyph];
+    if (rect)
+        return rect;
+    
+    var size = [aGlyph sizeWithFont:self];
+    rect = CPRectMake(0, 0, size.width, size.height);
+    _glyphBoundsCache[aGlyph] = rect;
+    return rect;
+}
 @end
 
 var CPFontDescriptorKey = @"CPFontDescriptorKey";
