@@ -143,6 +143,9 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     _layoutManager = [_textContainer layoutManager];
     _textStorage = [_layoutManager textStorage];
     
+    [_textStorage setFont:_font];
+    [_textStorage setForegroundColor:_textColor];
+    
     [self invalidateTextContainerOrigin];
 }
 - (CPTextStorage)textStorage
@@ -469,6 +472,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 {
     _font = font;
     [_textStorage addAttribute:CPFontAttributeName value:_font range:CPMakeRange(0, [_textStorage length])];
+    [_textStorage setFont:_font];
 }
 
 - (void)setFont:(CPFont)font range:(CPRange)range
@@ -477,8 +481,10 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         return;
 
     if (CPMaxRange(range) >= [_textStorage length])
+    {
         _font = font;
-
+        [_textStorage setFont:_font];
+    }
     [_textStorage addAttribute:CPFontAttributeName value:font range:CPCopyRange(range)];
         
     [self setNeedsLayout];
@@ -559,8 +565,10 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         return;
 
     if (CPMaxRange(range) >= [_textStorage length])
+    {
         _textColor = aColor;
-
+        [_textStorage setForegroundColor:_textColor];
+    }
     if (aColor)
         [_textStorage addAttribute:CPForegroundColorAttributeName value:aColor range:CPCopyRange(range)];
     else

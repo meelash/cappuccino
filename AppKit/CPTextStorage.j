@@ -54,6 +54,9 @@ CPUnderlineStyleAttributeName = @"CPUnderlineStyleAttributeName";
     unsigned _editedMask;
     CPRange _editedRange;
     int _editCount; // {begin,end}Editing counter
+    
+    CPFont _font;
+    CPColor _foregroundColor;
 }
 - (id)initWithString:(CPString)aString attributes:(CPDictionary)attributes
 {
@@ -247,5 +250,25 @@ CPUnderlineStyleAttributeName = @"CPUnderlineStyleAttributeName";
     
     [self edited:(CPTextStorageEditedAttributes | CPTextStorageEditedCharacters) range:aRange changeInLength:([aString length] - aRange.length)];
     [self endEditing];
+}
+
+- (void)setFont:(CPFont)aFont
+{
+    _font = aFont;
+}
+
+- (CPFont)font
+{
+    return _font;
+}
+
+- (void)setForegroundColor:(CPColor)color
+{
+    _foregroundColor = color;
+}
+
+- (CPColor)foregroundColor
+{
+    return _foregroundColor;
 }
 @end
