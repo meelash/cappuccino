@@ -33,6 +33,8 @@ var _CPLayoutManagerDefaultAttibutes = nil;
     CPDictionary _cachedAttributes;
     /* TODO: temporary attributes */
     
+    CPFont _font;
+    
     BOOL _hasNewline;
     BOOL _isDirty;
     
@@ -59,14 +61,13 @@ var _CPLayoutManagerDefaultAttibutes = nil;
 - (void)reset
 {
     _cachedAttributes = [_textStorage attributesAtIndex:_range.location effectiveRange:nil];
-    var font = nil;
     if ([_cachedAttributes containsKey:CPFontAttributeName])
-        font = [_cachedAttributes objectForKey:CPFontAttributeName];
+        _font = [_cachedAttributes objectForKey:CPFontAttributeName];
     else
-        font = [_CPLayoutManagerDefaultAttibutes objectForKey:CPFontAttributeName];
+        _font = [_textStorage font];
 
     var fragmentString = [self string];
-    _textSize = [fragmentString sizeWithFont:font];
+    _textSize = [fragmentString sizeWithFont:_font];
     _hasNewline = (fragmentString.indexOf('\n') != -1);
     _glyphsSizes = nil;
     _isDirty = YES;
@@ -103,17 +104,14 @@ var _CPLayoutManagerDefaultAttibutes = nil;
 {
     var domElement = document.createElement("span"),
         domStyle = domElement.style;
-    
-    if ([_cachedAttributes containsKey:CPFontAttributeName])
-        domStyle.font = [[_cachedAttributes objectForKey:CPFontAttributeName] cssString];
-    else
-        domStyle.font = [[_CPLayoutManagerDefaultAttibutes objectForKey:CPFontAttributeName] cssString];
-    
+
+    domStyle.font = [_font cssString];
+
     if ([_cachedAttributes containsKey:CPForegroundColorAttributeName])
         domStyle.color = [[_cachedAttributes objectForKey:CPForegroundColorAttributeName] cssString];
     else
-        domStyle.color = [[_CPLayoutManagerDefaultAttibutes objectForKey:CPForegroundColorAttributeName] cssString];
-    
+        domStyle.color = [[_textStorage foregroundColor] cssString];
+
     if ([_cachedAttributes containsKey:CPUnderlineStyleAttributeName] && [[_cachedAttributes objectForKey:CPUnderlineStyleAttributeName] intValue] == 1)
         domStyle.textDecoration = "underline";
     else
@@ -135,15 +133,12 @@ var _CPLayoutManagerDefaultAttibutes = nil;
     var domElement = document.createElement("span"),
         domStyle = domElement.style;
     
-    if ([_cachedAttributes containsKey:CPFontAttributeName])
-        domStyle.font = [[_cachedAttributes objectForKey:CPFontAttributeName] cssString];
-    else
-        domStyle.font = [[_CPLayoutManagerDefaultAttibutes objectForKey:CPFontAttributeName] cssString];
-    
+    domStyle.font = [_font cssString];
+
     if ([_cachedAttributes containsKey:CPForegroundColorAttributeName])
         domStyle.color = [[_cachedAttributes objectForKey:CPForegroundColorAttributeName] cssString];
     else
-        domStyle.color = [[_CPLayoutManagerDefaultAttibutes objectForKey:CPForegroundColorAttributeName] cssString];
+        domStyle.color = [[_textStorage foregroundColor] cssString];
     
     if ([_cachedAttributes containsKey:CPUnderlineStyleAttributeName] && [[_cachedAttributes objectForKey:CPUnderlineStyleAttributeName] intValue] == 1)
         domStyle.textDecoration = "underline";
@@ -179,13 +174,12 @@ var _CPLayoutManagerDefaultAttibutes = nil;
     if (!_glyphsSizes)
     {
         _glyphsSizes = [];
-        var font = [_cachedAttributes objectForKey:CPFontAttributeName],
-            fragmentString = [self string],
+        var fragmentString = [self string],
             c = [fragmentString length];
 
         for (var i = 0; i < c; i++)
         {
-            var size = [font boundingRectForGlyph:[fragmentString substringWithRange:CPMakeRange(i, 1)]].size;
+            var size = [_font boundingRectForGlyph:[fragmentString substringWithRange:CPMakeRange(i, 1)]].size;
             _glyphsSizes.push(size);
         }
     }
@@ -271,11 +265,10 @@ var _CPLayoutManagerDefaultAttibutes = nil;
     else
     {
         var index = 0,
-            font = [_cachedAttributes objectForKey:CPFontAttributeName],
             finishingLine = YES;
         do {
             var range = [self rangeForGlyphBoundingWidth:lineRect.size.width sweepDirection:CPLineSweepRight startingIndex:index whitespaceBreak:YES],
-                rangeSize = [[[self string] substringWithRange:range] sizeWithFont:font];            
+                rangeSize = [[[self string] substringWithRange:range] sizeWithFont:_font];            
             if (CPEmptyRange(range))
             {
                 CPLog.error(_cmd +" FIXME: rangeForGlyphBoundingWidth:"+lineRect.size.width+" sweepDirection:startingIndex:"+index+" return an empty range");
