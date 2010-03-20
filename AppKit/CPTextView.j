@@ -102,7 +102,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 {
     var layoutManager = [[CPLayoutManager alloc] init],
     textStorage = [[CPTextStorage alloc] init],
-    container = [[CPTextContainer alloc] initWithContainerSize:aFrame.size];
+    container = [[CPTextContainer alloc] initWithContainerSize:CPSizeMake(aFrame.size.width, 1e7)];
     
     [textStorage addLayoutManager:layoutManager];
     [layoutManager addTextContainer:container];
@@ -148,6 +148,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     
     [self invalidateTextContainerOrigin];
 }
+
 - (CPTextStorage)textStorage
 {
     return _textStorage;
@@ -156,6 +157,11 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 -(CPTextContainer)textContainer
 {
     return _textContainer;
+}
+
+- (CPLayoutManager)layoutManager
+{
+    return _layoutManager;
 }
 
 - (void)setTextContainerInset:(CPSize)aSize
@@ -280,16 +286,11 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     /*
         ???: handle selection drawing like :
             -setSelectedRange:affinity:stillSelecting: send [_layoutManager setTemporaryAttributes:forCharacterRange:]
-            ...
-            -drawRect: send [_layoutManager drawBackgroundForGlyphRange:atPoint:]
     */
-    var range = [_layoutManager glyphRangeForBoundingRect:aRect inTextContainer:_textContainer];
-    if (!CPEmptyRange(range))
-    {
-        [_layoutManager drawGlyphsForGlyphRange:range atPoint:_textContainerOrigin];
-    }
+    
     var ctx = [[CPGraphicsContext currentContext] graphicsPort];
     CGContextClearRect(ctx, aRect);
+    
     if (!CPEmptyRange(_selectionRange))
     {
         var rect = [_layoutManager boundingRectForGlyphRange:_selectionRange inTextContainer:_textContainer];
@@ -299,7 +300,15 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         CGContextFillRect(ctx, rect);
         CGContextRestoreGState(ctx);
     }
-    else if (_drawCarret)
+    
+    var range = [_layoutManager glyphRangeForBoundingRect:aRect inTextContainer:_textContainer];
+    if (!CPEmptyRange(range))
+    {
+        [_layoutManager drawBackgroundForGlyphRange:range atPoint:_textContainerOrigin];
+        [_layoutManager drawGlyphsForGlyphRange:range atPoint:_textContainerOrigin];
+    }
+    
+    if ((_selectionRange.length == 0) && _drawCarret)
     {
         CGContextSaveGState(ctx);
         
@@ -452,11 +461,6 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     return YES;
 }
 
-- (void)layoutSubviews
-{
-    [_textContainer _invalidateAllLines];
-}
-
 /* CPText concrete */
 - (void)delete:(id)sender
 {
@@ -604,16 +608,5 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 - (CPString)string
 {
     return [_textStorage string];
-}
-@end
-
-@implementation CPTextView (DOMElementHandling)
--(void)appendElement:(id)anElement
-{
-    _DOMElement.appendChild(anElement);
-}
--(void)removeElement:(id)anElement
-{
-    _DOMElement.removeChild(anElement);
 }
 @end
