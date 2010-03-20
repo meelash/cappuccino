@@ -159,6 +159,14 @@ function CPAppKitImage(aFilename, aSize)
     return self;
 }
 
+- (id)initWithData:(CPData)data
+{
+    var rawString = [data rawString];
+    if (!rawString.match(/^data:image\/\w+;base64,/))
+        return nil;
+    return [self initWithContentsOfFile:rawString];
+}
+
 /*!
     Returns the path of the file associated with this image.
 */
