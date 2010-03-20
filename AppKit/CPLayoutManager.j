@@ -247,8 +247,21 @@ function _lineFragmentsInRange(aList, aRange)
 - (CPRange)glyphRangeForTextContainer:(CPTextContainer)aTextContainer
 {
     [self _validateLayoutAndGlyphs];
-    /* FIXME: wrong ! */
-    return CPMakeRange(0, [self numberOfGlyphs]);
+
+    var range = nil,
+        c = [_lineFragments count];
+    for (var i = 0; i < c; i++)
+    {
+        var fragment = _lineFragments[i];
+        if (fragment._textContainer === aTextContainer)
+        {
+           if (!range)
+                range = CPCopyRange(fragment._range);
+            else
+                range = CPUnionRange(range, fragment._range);
+        }
+    }
+    return (range)?range:CPMakeRange(CPNotFound, 0);
 }
 
 - (void)_validateLayoutAndGlyphs
@@ -393,7 +406,7 @@ function _lineFragmentsInRange(aList, aRange)
 }
 
 /* 
-    FIXME: underline darwing should used [CPLayoutManager underlineGlyphRange:underlineType:lineFragmentRect:lineFragmentGlyphRange:containerOrigin:]
+    FIXME: underline drawing should used [CPLayoutManager underlineGlyphRange:underlineType:lineFragmentRect:lineFragmentGlyphRange:containerOrigin:]
 */
 - (void)drawGlyphsForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
