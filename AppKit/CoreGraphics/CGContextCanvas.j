@@ -447,3 +447,77 @@ function CGBitmapGraphicsContextCreate()
     
     return context;
 }
+
+/*
+    Offscreen bitmap context.
+    NOTE: a context create with this function need to call CGBitmapContextRelease,
+    to destroy the canvas that the context used. 
+*/
+function CGBitmapContextCreateOffscreen(width, height)
+{
+    var DOMElement = document.createElement("canvas"),
+        context = DOMElement.getContext("2d");
+    
+    DOMElement.width = width;
+    DOMElement.height = height;
+    DOMElement.style.overflow = "hidden";
+    DOMElement.style.position = "absolute";
+    DOMElement.style.visibility = "visible";
+    
+    DOMElement.style.top = "-1000px";
+    DOMElement.style.left = "-1000px";
+    DOMElement.style.width = width + "px";
+    DOMElement.style.height = height+ "px";
+    
+    [CPPlatform mainBodyElement].appendChild(DOMElement);
+    
+    context.DOMElement = DOMElement;
+    
+    return context;
+}
+
+function CGBitmapContextRelease(aContext)
+{
+    [CPPlatform mainBodyElement].removeChild(aContext.DOMElement);
+}
+
+function CGBitmapContextGetHeight(aContext)
+{
+    if (!aContext.DOMElement)
+        return 0;
+    return aContext.DOMElement.height;
+}
+
+function CGBitmapContextGetWidth(aContext)
+{
+    if (!aContext.DOMElement)
+        return 0;
+    return aContext.DOMElement.width;
+}
+
+function CGBitmapContextGetBytesPerRow(aContext)
+{
+    if (!aContext.DOMElement)
+        return 0;
+    return CGBitmapContextGetWidth(aContext) * 4;
+}
+
+function CGBitmapContextGetData(aContext)
+{
+    return aContext.getImageData(0, 0, CGBitmapContextGetWidth(aContext), CGBitmapContextGetHeight(aContext)).data;
+}
+
+function CGContextSetFont(aContext, aFont)
+{
+    aContext.font = [aFont cssString];
+}
+
+function CGContextSelectFont(aContext, fontName, size, ignored)
+{
+    aContext.font = [[CPFont fontWithName:fontName size:size] cssString];
+}
+
+function CGContextShowTextAtPoint(aContext, x, y, aString,/* unused */ aStringLength)
+{
+    aContext.fillText(aString, x, y);
+}
