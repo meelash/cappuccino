@@ -468,6 +468,7 @@ function CGBitmapContextCreateOffscreen(width, height)
     DOMElement.style.left = "-1000px";
     DOMElement.style.width = width + "px";
     DOMElement.style.height = height+ "px";
+    DOMElement.className = "cpdontremove";
     
     [CPPlatform mainBodyElement].appendChild(DOMElement);
     
@@ -505,6 +506,25 @@ function CGBitmapContextGetBytesPerRow(aContext)
 function CGBitmapContextGetData(aContext)
 {
     return aContext.getImageData(0, 0, CGBitmapContextGetWidth(aContext), CGBitmapContextGetHeight(aContext)).data;
+}
+
+function CGBitmapContextCreateImage(aContext)
+{
+    return [[CPImage alloc] initWithData:[CPData dataWithRawString:aContext.DOMElement.toDataURL()]];
+}
+
+function CGBitmapContextGetColorAt(aContext, x, y)
+{
+    if (x < 0 || y < 0 || x >= CGBitmapContextGetWidth(aContext) || y >= CGBitmapContextGetHeight(aContext))
+        return [CPColor blackColor];
+
+    var data = CGBitmapContextGetData(aContext),
+        index = (y * CGBitmapContextGetBytesPerRow(aContext) + (x * 4));
+
+    return [CPColor colorWithCalibratedRed:(data[index] / 255.0)
+                                     green:(data[index + 1] / 255.0)
+                                      blue:(data[index + 2] / 255.0)
+                                     alpha:(data[index + 3] / 255.0)];
 }
 
 function CGContextSetFont(aContext, aFont)
