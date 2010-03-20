@@ -28,7 +28,7 @@
 
 - (void)changeColor:(id)sender
 {
-    [_textView setTextColor:[_colorWell color] range:[_textView selectedRange]];
+    [_textView setTextColor:[sender color] range:[_textView selectedRange]];
 }
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
 {
