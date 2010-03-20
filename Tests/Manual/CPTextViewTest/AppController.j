@@ -40,6 +40,7 @@
     [contentView setBackgroundColor:[CPColor colorWithWhite:0.95 alpha:1.0]];
     
     _textView = [[CPTextView alloc] initWithFrame:CGRectMake(0,0,500,500)];    
+    [_textView setBackgroundColor:[CPColor whiteColor]];
   
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20, 20,510,510)];
   //  [scrollView setAutohidesScrollers:YES];
