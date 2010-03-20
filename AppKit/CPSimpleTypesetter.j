@@ -62,7 +62,8 @@ var _sharedSimpleTypesetter = nil;
         nextGlyphIndex = glyphIndex,
         wrapRange = CPMakeRange(0, 0),
         wrapWidth = 0,
-        isNewline = NO;
+        isNewline = NO,
+        isWordWrapped = NO;
         
     while ((nextGlyphIndex = CPMaxRange(fragmentRange)) < CPMaxRange(_attributesRange))
     {
@@ -92,10 +93,12 @@ var _sharedSimpleTypesetter = nil;
             }
             else
             {
+                /* FIXME: this is wrong */
                 fragmentRange.length--;
             }
             isNewline = YES;
             exitFragment = YES;
+            isWordWrapped = YES;
         }
         _lineRect.size.height = Math.max(_lineRect.size.height, glyphBound.size.height);
         fragmentWidth += glyphBound.size.width;
@@ -118,7 +121,7 @@ var _sharedSimpleTypesetter = nil;
         _lineRect.origin.y += _lineRect.size.height;
         _lineRect.size.width = [_currentTextContainer containerSize].width;
         _lineRect.size.height = 0;
-        if (!wrapWidth)
+        if (!isWordWrapped)
             [_layoutManager setExtraLineFragmentRect:_lineRect usedRect:_lineRect textContainer:_currentTextContainer];
     }
     else
