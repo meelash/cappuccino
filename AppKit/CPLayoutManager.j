@@ -396,13 +396,42 @@ function _lineFragmentsInRange(aList, aRange)
     return (range)?range:CPMakeRange(0,0);
 }
 
-- (void)drawBackgroundForGlyphRange:(CPRange)aRange atPoint:(CPPoint)origin
+- (void)drawBackgroundForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
     [self _validateLayoutAndGlyphs];
     var lineFragments = _lineFragmentsInRange(_lineFragments, aRange);
     if (!lineFragments.length)
         return;
-    /* FIXME: stub */
+
+    var ctx = [[CPGraphicsContext currentContext] graphicsPort],
+        painted = 0,
+        lineFragmentIndex = 0,
+        currentFragment = lineFragments[lineFragmentIndex],
+        frames = [currentFragment glyphFramesWithTextStorage:_textStorage],
+        framesToPaint = Math.min(currentFragment._range.length, aRange.length);
+
+    while (painted != aRange.length)
+    {
+        CGContextSaveGState(ctx);
+        CGContextSetFillColor(ctx, currentFragment._backgroundColor);
+
+        for (var i = 0; i < framesToPaint; i++)
+            CGContextFillRect(ctx, CPRectMake(aPoint.x + frames[i].origin.x, aPoint.y + frames[i].origin.y, 
+                                    frames[i].size.width, frames[i].size.height));
+
+        CGContextRestoreGState(ctx);
+
+        painted += framesToPaint;
+        lineFragmentIndex++;
+        if (lineFragmentIndex < lineFragments.length)
+        {
+            currentFragment = lineFragments[lineFragmentIndex];
+            frames = [currentFragment glyphFramesWithTextStorage:_textStorage];
+            framesToPaint = Math.min(currentFragment._range.length, aRange.length);
+       }
+        else
+            break;
+    }
 }
 
 /* 
