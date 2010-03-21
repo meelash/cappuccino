@@ -98,6 +98,8 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         _textColor = [CPColor blackColor];
         _font = [CPFont fontWithName:@"Helvetica" size:12.0];
         
+        _typingAttributes = [[CPDictionary alloc] initWithObjects:[_font, _textColor] forKeys:[CPFontAttributeName, CPForegroundColorAttributeName]];
+        
         _minSize = CPSizeCreateCopy(aFrame.size);
         _maxSize = CPSizeMake(aFrame.size.width, 1e7);
         
@@ -263,8 +265,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         [_textStorage replaceCharactersInRange:CPCopyRange(_selectionRange) withAttributedString:aString];
     else
     {
-        var attributes = [[CPDictionary alloc] initWithObjects:[[self font], [self textColor]] forKeys:[CPFontAttributeName, CPForegroundColorAttributeName]];
-        [_textStorage replaceCharactersInRange:CPCopyRange(_selectionRange) withAttributedString:[[CPAttributedString alloc] initWithString:aString attributes:attributes]];
+        [_textStorage replaceCharactersInRange:CPCopyRange(_selectionRange) withAttributedString:[[CPAttributedString alloc] initWithString:aString attributes:_typingAttributes]];
     }
     [self setSelectedRange:CPMakeRange(_selectionRange.location + [string length], 0)];
 
@@ -471,7 +472,32 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     return YES;
 }
 
-/* CPText concrete */
+- (void)setTypingAttributes:(CPDictionary)attributes
+{
+    _typingAttributes = [attributes copy];
+    /* check that new attributes contains essentials one's */
+    if (![_typingAttributes containsKey:CPFontAttributeName])
+        [_typingAttributes setObject:[self font] forKey:CPFontAttributeName];
+
+    if (![_typingAttributes containsKey:CPForegroundColorAttributeName])
+        [_typingAttributes setObject:[self textColor] forKey:CPForegroundColorAttributeName];
+}
+
+- (CPDictionary)typingAttributes
+{
+    return _typingAttributes;
+}
+
+- (void)setSelectedTextAttributes:(CPDictionary)attributes
+{
+    _selectedTextAttributes = attributes;
+}
+
+- (CPDictionary)selectedTextAttributes
+{
+    return _selectedTextAttributes;
+}
+
 - (void)delete:(id)sender
 {
     if (![self shouldChangeTextInRange:_selectionRange replacementString:@""])
@@ -681,12 +707,17 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)setConstrainedFrameSize:(CPSize)desiredSize
 {
+    var boundsSize = [self bounds].size;
     if (_isHorizontallyResizable)
     {
         if (desiredSize.width < _minSize.width)
             desiredSize.width = _minSize.width;
         else if (desiredSize.width > _maxSize.width)
             desiredSize.width = _maxSize.width;
+    }
+    else
+    {
+        desiredSize.width = boundsSize.width;
     }
     if (_isVerticallyResizable)
     {
@@ -695,6 +726,11 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         else if (desiredSize.height > _maxSize.height)
             desiredSize.height = _maxSize.height;
     }
+    else
+    {
+        desiredSize.height = boundsSize.height;
+    }
+
     if (_isHorizontallyResizable || _isVerticallyResizable)
     {
         [self setFrameSize:desiredSize];
