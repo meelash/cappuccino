@@ -56,6 +56,11 @@ CPTextDidEndEditingNotification = @"CPTextDidEndEditingNotification";
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
     return nil;
 }
+- (BOOL)isHorizontallyResizable
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+    return NO;
+}
 - (BOOL)isRichText
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
@@ -66,6 +71,21 @@ CPTextDidEndEditingNotification = @"CPTextDidEndEditingNotification";
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
     return NO;
 }
+- (BOOL)isVerticallyResizable
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+    return NO;
+}
+- (CPSize)maxSize
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+    return CPMakeSize(0,0);
+}
+- (CPSize)minSize
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+    return CPMakeSize(0,0);
+}
 - (void)paste:(id)sender
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
@@ -75,6 +95,10 @@ CPTextDidEndEditingNotification = @"CPTextDidEndEditingNotification";
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
 }
 - (void)replaceCharactersInRange:(CPRange)aRange withString:(CPString)aString
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+}
+- (void)scrollRangeToVisible:(CPRange)aRange
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
 }
@@ -95,11 +119,19 @@ CPTextDidEndEditingNotification = @"CPTextDidEndEditingNotification";
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
 }
+- (void)setHorizontallyResizable:(BOOL)flag
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+}
 - (void)setString:(CPString)aString
 {
     [self replaceCharactersInRange:CPMakeRange(0, [[self string] length]) withString:aString];
 }
 - (void)setUsesFontPanel:(BOOL)flag
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+}
+- (void)setVerticallyResizable:(BOOL)flag
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
 }

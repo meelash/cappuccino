@@ -53,6 +53,9 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     
     int _startTrackingLocation;
     CPRange _selectionRange;
+    CPDictionary _selectedTextAttributes;
+    
+    CPDictionary _typingAttributes;
     
     BOOL _isFirstResponder;
     
@@ -66,10 +69,15 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     CPFont _font;
     CPColor _textColor;
     
+    CPSize _minSize;
+    CPSize _maxSize;
+    
     /* use bit mask ? */
     BOOL _isRichText;
     BOOL _usesFontPanel;
     BOOL _allowsUndo;
+    BOOL _isHorizontallyResizable;
+    BOOL _isVerticallyResizable;
 }
 -(id) initWithFrame:(CPRect)aFrame textContainer:(CPTextContainer)aContainer
 {
@@ -90,9 +98,14 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         _textColor = [CPColor blackColor];
         _font = [CPFont fontWithName:@"Helvetica" size:12.0];
         
+        _minSize = CPSizeCreateCopy(aFrame.size);
+        _maxSize = CPSizeMake(aFrame.size.width, 1e7);
+        
         _isRichText = YES;
         _usesFontPanel = YES;
         _allowsUndo = NO;
+        _isVerticallyResizable = YES;
+        _isHorizontallyResizable = NO;
         
         _carretRect = CPRectMake(0,0,1,12);
     }
@@ -256,6 +269,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     [self setSelectedRange:CPMakeRange(_selectionRange.location + [string length], 0)];
 
     [self didChangeText];
+    [self scrollRangeToVisible:_selectionRange];
 }
 
 - (void)_blinkCarret:(CPTimer)aTimer
@@ -283,14 +297,10 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)drawRect:(CPRect)aRect
 {
-    /*
-        ???: handle selection drawing like :
-            -setSelectedRange:affinity:stillSelecting: send [_layoutManager setTemporaryAttributes:forCharacterRange:]
-    */
-    
     var ctx = [[CPGraphicsContext currentContext] graphicsPort];
     CGContextClearRect(ctx, aRect);
-    
+
+    /* hack: handle selection drawing with temporary background color attributes set to the selection range */
     if (!CPEmptyRange(_selectionRange))
     {
         var rect = [_layoutManager boundingRectForGlyphRange:_selectionRange inTextContainer:_textContainer];
@@ -468,15 +478,19 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         return;
         
     [_textStorage deleteCharactersInRange:CPCopyRange(_selectionRange)];
-    [self setSelectedRange:CPMakeRange(_selectionRange.location, 0)];
+    var range = CPMakeRange(_selectionRange.location, 0);
+    [self setSelectedRange:range];
     [self didChangeText];
+    [self scrollRangeToVisible:range];
 }
 
 - (void)setFont:(CPFont)font
 {
     _font = font;
-    [_textStorage addAttribute:CPFontAttributeName value:_font range:CPMakeRange(0, [_textStorage length])];
+    var length = [_textStorage length];
+    [_textStorage addAttribute:CPFontAttributeName value:_font range:CPMakeRange(0, length)];
     [_textStorage setFont:_font];
+    [self scrollRangeToVisible:CPMakeRange(length, 0)];
 }
 
 - (void)setFont:(CPFont)font range:(CPRange)range
@@ -490,9 +504,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         [_textStorage setFont:_font];
     }
     [_textStorage addAttribute:CPFontAttributeName value:font range:CPCopyRange(range)];
-        
-    [self setNeedsLayout];
-    [self setNeedsDisplay:YES];
+    [self scrollRangeToVisible:CPMakeRange(CPMaxRange(range), 0)];
 }
 
 - (CPFont)font
@@ -516,10 +528,13 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     if ([self isRichText])
     {
         [self setFont:[sender convertFont:oldFont] range:_selectionRange];
+        [self scrollRangeToVisible:CPMakeRange(CPMaxRange(_selectionRange), 0)];
     }
     else
     {
-        [self setFont:[sender convertFont:oldFont] range:CPMakeRange(0, [_textStorage length])];
+        var length = [_textStorage length];
+        [self setFont:[sender convertFont:oldFont] range:CPMakeRange(0,length)];
+        [self scrollRangeToVisible:CPMakeRange(length, 0)];
     }
 }
 
@@ -561,6 +576,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         [_textStorage addAttribute:CPForegroundColorAttributeName value:_textColor range:CPMakeRange(0, [_textStorage length])];
     else
         [_textStorage removeAttribute:CPForegroundColorAttributeName range:CPMakeRange(0, [_textStorage length])];
+    [self scrollRangeToVisible:CPMakeRange([_textStorage length], 0)];
 }
 
 - (void)setTextColor:(CPColor)aColor range:(CPRange)range
@@ -577,6 +593,8 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         [_textStorage addAttribute:CPForegroundColorAttributeName value:aColor range:CPCopyRange(range)];
     else
         [_textStorage removeAttribute:CPForegroundColorAttributeName range:CPCopyRange(range)];
+
+    [self scrollRangeToVisible:CPMakeRange(CPMaxRange(range), 0)];
 }
 
 - (CPColor)textColor
@@ -593,20 +611,114 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 {
     return NO;
 }
+
 - (BOOL)allowsUndo
 {
     return _allowsUndo;
 }
+
 - (CPRange)selectedRange
 {
     return _selectionRange;
 }
+
 - (void)replaceCharactersInRange:(CPRange)aRange withString:(CPString)aString
 {
     [_textStorage replaceCharactersInRange:aRange withString:aString];
 }
+
 - (CPString)string
 {
     return [_textStorage string];
+}
+
+- (BOOL)isHorizontallyResizable
+{
+    return _isHorizontallyResizable;
+}
+
+- (void)setHorizontallyResizable:(BOOL)flag
+{
+    _isHorizontallyResizable = flag;
+}
+
+- (BOOL)isVerticallyResizable
+{
+    return _isVerticallyResizable;
+}
+
+- (void)setVerticallyResizable:(BOOL)flag
+{
+    _isVerticallyResizable = flag;
+}
+
+- (CPSize)maxSize
+{
+    return _maxSize;
+}
+
+- (CPSize)minSize
+{
+    return _minSize;
+}
+
+- (void)sizeToFit
+{
+    var size = [self bounds].size,
+        rect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(0, [_textStorage length]) inTextContainer:_textContainer];
+
+    if ([_layoutManager extraLineFragmentTextContainer] === _textContainer)
+        rect = CPRectUnion(rect, [_layoutManager extraLineFragmentRect]);
+
+    if (_isHorizontallyResizable)
+        size.width = rect.size.width + 2 * _textContainerInset.width;
+
+    if (_isVerticallyResizable)
+        size.height = rect.size.height + 2 * _textContainerInset.height;
+    
+    [self setConstrainedFrameSize:size];
+}
+
+- (void)setConstrainedFrameSize:(CPSize)desiredSize
+{
+    if (_isHorizontallyResizable)
+    {
+        if (desiredSize.width < _minSize.width)
+            desiredSize.width = _minSize.width;
+        else if (desiredSize.width > _maxSize.width)
+            desiredSize.width = _maxSize.width;
+    }
+    if (_isVerticallyResizable)
+    {
+        if (desiredSize.height < _minSize.height)
+            desiredSize.height = _minSize.height;
+        else if (desiredSize.height > _maxSize.height)
+            desiredSize.height = _maxSize.height;
+    }
+    if (_isHorizontallyResizable || _isVerticallyResizable)
+    {
+        [self setFrameSize:desiredSize];
+    }
+}
+
+- (void)scrollRangeToVisible:(CPRange)aRange
+{
+    [self sizeToFit];
+
+    var rect;
+    if (CPEmptyRange(aRange))
+    {
+        if (aRange.location >= [_textStorage length])
+            rect = [_layoutManager extraLineFragmentRect];
+        else
+            rect = [_layoutManager lineFragmentRectForGlyphAtIndex:aRange.location effectiveRange:nil];
+    }
+    else
+        rect = [_layoutManager boundingRectForGlyphRange:aRange inTextContainer:_textContainer];
+
+    rect.origin.x += _textContainerOrigin.x;
+    rect.origin.y += _textContainerOrigin.y;
+        
+    [self scrollRectToVisible:rect];
 }
 @end
