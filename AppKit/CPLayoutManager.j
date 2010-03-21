@@ -594,14 +594,21 @@ function _lineFragmentsInRange(aList, aRange)
 - (CPRect)extraLineFragmentRect
 {
     if (_extraLineFragment)
-        return _extraLineFragment._fragmentRect;
+        return CPRectCreateCopy(_extraLineFragment._fragmentRect);
     return CPRectMakeZero();
+}
+
+- (CPTextContainer)extraLineFragmentTextContainer
+{
+    if (_extraLineFragment)
+        return _extraLineFragment._textContainer;
+    return nil;
 }
 
 - (CPRect)extraLineFragmentUsedRect
 {
     if (_extraLineFragment)
-        return _extraLineFragment._usedRect;
+        return CPRectCreateCopy(_extraLineFragment._usedRect);
     return CPRectMakeZero();
 }
 
@@ -641,9 +648,15 @@ function _lineFragmentsInRange(aList, aRange)
     [self _validateLayoutAndGlyphs];
     
     var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphIndex);
-    if (lineFragment)
-        return CPRectCreateCopy(lineFragment._fragmentRect);
-    return CPRectMakeZero();
+    if (!lineFragment)
+        return CPRectMakeZero();
+ 
+    if (effectiveGlyphRange)
+    {
+        effectiveGlyphRange.location = lineFragment._range.location;
+        effectiveGlyphRange.length = lineFragment._range.length;
+    }
+    return CPRectCreateCopy(lineFragment._fragmentRect);
 }
 
 - (CPRect)lineFragmentUsedRectForGlyphAtIndex:(unsigned)glyphIndex effectiveRange:(CPRangePointer)effectiveGlyphRange
@@ -651,9 +664,15 @@ function _lineFragmentsInRange(aList, aRange)
     [self _validateLayoutAndGlyphs];
     
     var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphIndex);
-    if (lineFragment)
-        return CPRectCreateCopy(lineFragment._usedRect);
-    return CPRectMakeZero();
+    if (!lineFragment)
+        return CPRectMakeZero();
+
+    if (effectiveGlyphRange)
+    {
+        effectiveGlyphRange.location = lineFragment._range.location;
+        effectiveGlyphRange.length = lineFragment._range.length;
+    }
+    return CPRectCreateCopy(lineFragment._usedRect);
 }
 
 - (CPPoint)locationForGlyphAtIndex:(unsigned)index
