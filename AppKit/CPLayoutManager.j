@@ -24,7 +24,8 @@
 @import "CPTextContainer.j"
 @import "CPTypesetter.j"
 
-function _lineFragmentWithLocation(aList, aLocation)
+
+var _lineFragmentWithLocation = function(aList, aLocation)
 {
     var i, c = aList.length;
     for (i = 0; i < c; i++)
@@ -35,7 +36,7 @@ function _lineFragmentWithLocation(aList, aLocation)
     return nil;
 }
 
-function _indexOfLineFragmentWithLocation(aList, aLocation)
+var _indexOfLineFragmentWithLocation = function(aList, aLocation)
 {
     var i, c = aList.length;
     for (i = 0; i < c; i++)
@@ -46,7 +47,7 @@ function _indexOfLineFragmentWithLocation(aList, aLocation)
     return CPNotFound;
 }
 
-function _lineFragmentsInRange(aList, aRange)
+var _lineFragmentsInRange = function(aList, aRange)
 {
     var list = [],
         c = aList.length,
@@ -449,8 +450,8 @@ function _lineFragmentsInRange(aList, aRange)
         lineFragmentIndex = 0,
         currentFragment = lineFragments[lineFragmentIndex],
         frames = [currentFragment glyphFramesWithTextStorage:_textStorage];
-
-    var string;
+        
+    var string = nil;
     if (aRange.location < currentFragment._range.location)
         string = [_textStorage._string substringWithRange:CPMakeRange(currentFragment._range.location, Math.min(currentFragment._range.length, aRange.length))],
     else
@@ -555,9 +556,7 @@ function _lineFragmentsInRange(aList, aRange)
 {
     if ([attributes containsKey:CPBackgroundColorAttributeName])
         return [attributes objectForKey:CPBackgroundColorAttributeName];
-        
-    /* FIXME: use [[lineFragment._textContainer textView] backgroundColor] as default value if textView is available */
-    return [CPColor whiteColor];
+    return [CPColor clearColor];
 }
 
 - (void)setTextContainer:(CPTextContainer)aTextContainer forGlyphRange:(CPRange)glyphRange
