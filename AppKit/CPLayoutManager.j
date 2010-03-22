@@ -453,9 +453,9 @@ var _lineFragmentsInRange = function(aList, aRange)
         
     var string = nil;
     if (aRange.location < currentFragment._range.location)
-        string = [_textStorage._string substringWithRange:CPMakeRange(currentFragment._range.location, Math.min(currentFragment._range.length, aRange.length))],
+        string = [_textStorage._string substringWithRange:CPMakeRange(currentFragment._range.location, Math.min(currentFragment._range.length, aRange.length))];
     else
-        string = [_textStorage._string substringWithRange:CPMakeRange(aRange.location, Math.min(currentFragment._range.length, aRange.length))],
+        string = [_textStorage._string substringWithRange:CPMakeRange(aRange.location, Math.min(currentFragment._range.length, aRange.length))];
 
     while (painted != aRange.length)
     {            
