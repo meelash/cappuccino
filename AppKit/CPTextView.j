@@ -30,6 +30,13 @@
 */
 CPTextViewDidChangeSelectionNotification = @"CPTextViewDidChangeSelectionNotification";
 
+/*
+    CPSelectionGranularity
+*/
+CPSelectByCharacter = 0;
+CPSelectByWord      = 1;
+CPSelectByParagraph = 2;
+
 
 var kDelegateRespondsTo_textShouldBeginEditing = 0x0001;
 var kDelegateRespondsTo_textView_doCommandBySelector = 0x0002;
@@ -54,6 +61,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     int _startTrackingLocation;
     CPRange _selectionRange;
     CPDictionary _selectedTextAttributes;
+    int _selectionGranularity;
     
     CPDictionary _typingAttributes;
     
@@ -94,6 +102,8 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         _delegate = nil;
         _delegateRespondsToSelectorMask = 0;
         _selectionRange = CPMakeRange(0, 0);
+        
+        _selectionGranularity = CPSelectByCharacter;
         
         _textColor = [CPColor blackColor];
         _font = [CPFont fontWithName:@"Helvetica" size:12.0];
@@ -756,5 +766,89 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     rect.origin.y += _textContainerOrigin.y;
         
     [self scrollRectToVisible:rect];
+}
+
+- (CPRange)_characterRangeForWordAtIndex:(unsigned)index inString:(CPString)string
+{
+    var characterSet = [' ', '\n', '\t', ',', ';', '.', '!', '?', '\'', '"', '-', ':'], /* just a testing characterSet 
+                                                                                            all of this depend of the current language.
+                                                                                            Need some CPLocale support and others...
+                                                                                        */
+        wordRange = CPMakeRange(0, 0),
+        lastIndex = CPNotFound,
+        searchIndex = 0;
+
+    if ((characterSet.join("")).indexOf(string.charAt(index)) != CPNotFound)
+    {
+        wordRange.location = index;
+        wordRange.length = 1;
+        return wordRange;
+    }
+    
+    do
+    {
+        lastIndex = string.lastIndexOf(characterSet[searchIndex++], index);
+    } while (searchIndex < characterSet.length && lastIndex == CPNotFound);
+
+    if (lastIndex != CPNotFound)
+        wordRange.location = lastIndex + 1;
+    
+    lastIndex = CPNotFound;
+    searchIndex = 0;
+
+    do
+    {
+        lastIndex = string.indexOf(characterSet[searchIndex++], index);
+    } while (searchIndex < characterSet.length && lastIndex == CPNotFound);
+
+    if (lastIndex != CPNotFound)
+        wordRange.length = lastIndex - wordRange.location;
+    else
+        wordRange.length = string.length - wordRange.location;
+    return wordRange;
+}
+
+- (CPRange)selectionRangeForProposedRange:(CPRange)proposedRange granularity:(CPSelectionGranularity)granularity
+{
+    var textStorageLength = [_textStorage length];    
+    if (textStorageLength == 0)
+        return CPMakeRange(0, 0);
+
+    if (proposedRange.location >= textStorageLength)
+        return CPMakeRange(textStorageLength, 0);
+
+    if (CPMaxRange(proposedRange) > textStorageLength)
+        proposedRange.length = textStorageLength - proposedRange.location;
+
+    switch(granularity)
+    {
+        case CPSelectByWord:
+        {
+            /*
+                FIXME: use an internal method.
+                But it seems that CPAttributedString(AppKitAdditions) -doubleClickAtIndex: is really what we need.
+            */
+            var string = [_textStorage string],
+                wordRange = [self _characterRangeForWordAtIndex:proposedRange.location inString:string];
+                
+            if (proposedRange.length)
+                wordRange = CPUnionRange(wordRange, [self _characterRangeForWordAtIndex:CPMaxRange(proposedRange) inString:string]);
+                
+            return wordRange;
+        } break;
+
+        case CPSelectByParagraph:
+            CPLog.error(_cmd+" CPSelectByParagraph granularity unimplemented");
+        /* fallback to default */
+
+        case CPSelectByCharacter: /* FIXME: unclear how CPSelectByCharacter should affect selection range */
+        default:
+            return proposedRange;
+    }
+}
+
+- (void)setSelectionGranularity:(CPSelectionGranularity)granularity
+{
+    _selectionGranularity = granularity;
 }
 @end
