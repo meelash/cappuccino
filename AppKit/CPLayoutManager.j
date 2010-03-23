@@ -311,7 +311,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 {    
     var lineFragments = _lineFragmentsInRange(_lineFragments, range);
     for (var i = 0; i < lineFragments.length; i++)
-        [[lineFragments[i]._textContainer textView] setNeedsDisplayInRect:lineFragments[i]._usedRect];
+        [[lineFragments[i]._textContainer textView] setNeedsDisplayInRect:lineFragments[i]._fragmentRect];
 }
 
 - (void)invalidateLayoutForCharacterRange:(CPRange)aRange isSoft:(BOOL)flag actualCharacterRange:(CPRangePointer)actualCharRange
@@ -327,7 +327,7 @@ var _lineFragmentsInRange = function(aList, aRange)
         {
             if (actualCharRange)
             {
-                actualCharRange.length = CPNotFound;
+                actualCharRange.length = aRange.length;
                 actualCharRange.location = 0;
             }
             return;
@@ -345,6 +345,8 @@ var _lineFragmentsInRange = function(aList, aRange)
         _lineFragments[i]._isInvalid = YES;
         range = CPUnionRange(range, _lineFragments[i]._range);
     }
+    if (CPMaxRange(range) < CPMaxRange(aRange))
+        range = CPUnionRange(range, aRange);
 
     if (actualCharRange)
     {
@@ -372,25 +374,35 @@ var _lineFragmentsInRange = function(aList, aRange)
         var fragment = _lineFragments[i];
         if (fragment._textContainer === container)
         {
-            var glyphRange = CPMakeRange(CPNotFound,0),
-                frames = [fragment glyphFramesWithTextStorage:_textStorage];
-
-            for (var j = 0; j < frames.length; j++)
-            {
-                if (CPRectIntersectsRect(aRect, frames[j]))
-                {
-                    if (glyphRange.location == CPNotFound)
-                        glyphRange.location = fragment._range.location + j;
-                    else
-                        glyphRange.length++;
-                }
-            }
-            if (glyphRange.location != CPNotFound)
+            if (CPRectContainsRect(aRect, fragment._usedRect))
             {
                 if (!range)
-                    range = CPCopyRange(glyphRange);
+                    range = CPCopyRange(fragment._range);
                 else
-                    range = CPUnionRange(range, glyphRange);
+                    range = CPUnionRange(range, fragment._range);
+            }
+            else
+            {
+                var glyphRange = CPMakeRange(CPNotFound,0),
+                frames = [fragment glyphFramesWithTextStorage:_textStorage];
+                
+                for (var j = 0; j < frames.length; j++)
+                {
+                    if (CPRectIntersectsRect(aRect, frames[j]))
+                    {
+                        if (glyphRange.location == CPNotFound)
+                        glyphRange.location = fragment._range.location + j;
+                        else
+                        glyphRange.length++;
+                    }
+                }
+                if (glyphRange.location != CPNotFound)
+                {
+                    if (!range)
+                        range = CPCopyRange(glyphRange);
+                    else
+                        range = CPUnionRange(range, glyphRange);
+                }
             }
         }
     }
@@ -458,7 +470,7 @@ var _lineFragmentsInRange = function(aList, aRange)
         string = [_textStorage._string substringWithRange:CPMakeRange(aRange.location, Math.min(currentFragment._range.length, aRange.length))];
 
     while (painted != aRange.length)
-    {            
+    {
         CGContextSaveGState(ctx);
         CGContextSetFillColor(ctx, currentFragment._textColor);
         CGContextSetFont(ctx, currentFragment._font);
@@ -512,6 +524,15 @@ var _lineFragmentsInRange = function(aList, aRange)
 }
 
 - (void)setTemporaryAttributes:(CPDictionary)attributes forCharacterRange:(CPRange)charRange
+{
+    /* FIXME: stub */
+}
+
+- (void)addTemporaryAttributes:(CPDictionary)attributes forCharacterRange:(CPRange)charRange
+{
+    /* FIXME: stub */
+}
+- (void)removeTemporaryAttribute:(CPString)attributeName forCharacterRange:(CPRange)charRange
 {
     /* FIXME: stub */
 }
@@ -687,5 +708,40 @@ var _lineFragmentsInRange = function(aList, aRange)
         return CPPointCreateCopy(glyphFrames[index - lineFragment._range.location].origin);
     }
     return CPPointMakeZero();
+}
+
+- (CPTextContainer)textContainerForGlyphAtIndex:(unsigned)index effectiveRange:(CPRangePointer)effectiveGlyphRange withoutAdditionalLayout:(BOOL)flag
+{
+    if (!flag)
+        [self _validateLayoutAndGlyphs];
+
+    var lineFragment = _lineFragmentWithLocation(_lineFragments, index);
+    if (lineFragment)
+    {
+        if (effectiveGlyphRange)
+        {
+            effectiveGlyphRange.location = lineFragment._range.location;
+            effectiveGlyphRange.length = lineFragment._range.length;
+        }
+        return lineFragment._textContainer;
+    }
+    return nil;
+}
+
+- (CPTextContainer)textContainerForGlyphAtIndex:(unsigned)index effectiveRange:(CPRangePointer)effectiveGlyphRange
+{
+    return [self textContainerForGlyphAtIndex:index effectiveRange:effectiveGlyphRange withoutAdditionalLayout:NO];
+}
+
+- (CPRange)characterRangeForGlyphRange:(CPRange)aRange actualGlyphRange:(CPRangePointer)actualRange
+{
+    /* FIXME: stub */
+    return aRange;
+}
+
+- (unsigned)characterIndexForGlyphAtIndex:(unsigned)index
+{
+    /* FIXME: stub */
+    return index;
 }
 @end
