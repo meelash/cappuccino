@@ -100,14 +100,15 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
         [aContainer setTextView:self];
         _isEditable = YES;
         _isSelectable = YES;
-        
+
         _isFirstResponder = NO;
         _delegate = nil;
         _delegateRespondsToSelectorMask = 0;
         _selectionRange = CPMakeRange(0, 0);
-        
+
         _selectionGranularity = CPSelectByCharacter;
-        
+        _selectedTextAttributes = [CPDictionary dictionaryWithObject:[CPColor selectedTextBackgroundColor] forKey:CPBackgroundColorAttributeName];
+
         _textColor = [CPColor blackColor];
         _font = [CPFont fontWithName:@"Helvetica" size:12.0];
         
@@ -131,7 +132,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     var layoutManager = [[CPLayoutManager alloc] init],
     textStorage = [[CPTextStorage alloc] init],
     container = [[CPTextContainer alloc] initWithContainerSize:CPSizeMake(aFrame.size.width, 1e7)];
-    
+
     [textStorage addLayoutManager:layoutManager];
     [layoutManager addTextContainer:container];
         
@@ -327,17 +328,25 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     var ctx = [[CPGraphicsContext currentContext] graphicsPort];
     CGContextClearRect(ctx, aRect);
 
-    /* hack: handle selection drawing with temporary background color attributes set to the selection range */
+    /*
+        FIXME: used CPLayoutManager rectArrayForGlyphRange:withinSelectedGlyphRange:inTextContainer:rectCount: 
+        for highlighting selected 'glyphs'.
+        
+        Also selected background color have to hide other background painting (normal or temporary) see LayoutManagerDemo
+    */
     if (!CPEmptyRange(_selectionRange))
     {
         var rect = [_layoutManager boundingRectForGlyphRange:_selectionRange inTextContainer:_textContainer];
         CGContextSaveGState(ctx);
     
-        CGContextSetFillColor(ctx, [CPColor alternateSelectedControlColor]);
+        rect.origin.x += _textContainerOrigin.x;
+        rect.origin.y += _textContainerOrigin.y;
+
+        CGContextSetFillColor(ctx, [_selectedTextAttributes objectForKey:CPBackgroundColorAttributeName]);
         CGContextFillRect(ctx, rect);
         CGContextRestoreGState(ctx);
     }
-    
+
     var range = [_layoutManager glyphRangeForBoundingRect:aRect inTextContainer:_textContainer];
     if (!CPEmptyRange(range))
     {
@@ -367,16 +376,23 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
         _selectionRange = [_delegate textView:self willChangeSelectionFromCharacterRange:_selectionRange toCharacterRange:range];
     else
         _selectionRange = CPCopyRange(range);
-        
+
+    if (_selectionRange.length)
+        [_layoutManager invalidateDisplayForGlyphRange:_selectionRange];
+    else
+        [self setNeedsDisplay:YES];
+
     if (!selecting)
     {
         [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeSelectionNotification object:self];
         
+        // TODO: check multiple font in selection
+        var attributes = [_textStorage attributesAtIndex:_selectionRange.location effectiveRange:nil];
+        [self setTypingAttributes:attributes];
+        
         if (_usesFontPanel)
         {
-            // TODO: check multiple font in selection        
-            var attributes = [_textStorage attributesAtIndex:_selectionRange.location effectiveRange:nil],
-                font = [attributes objectForKey:CPFontAttributeName];
+            var font = [attributes objectForKey:CPFontAttributeName];
             [[CPFontManager sharedFontManager] setSelectedFont:(font)?font:[self font] isMultiple:NO];
         }
     }
@@ -394,19 +410,30 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)mouseDown:(CPEvent)event
 {
-    var fraction = [];
-    _startTrackingLocation = [_layoutManager glyphIndexForPoint:[self convertPoint:[event locationInWindow] fromView:nil] inTextContainer:_textContainer fractionOfDistanceThroughGlyph:fraction];
+    var fraction = [],
+        point = [self convertPoint:[event locationInWindow] fromView:nil];
+    
+    // convert to container coordinate
+    point.x -= _textContainerOrigin.x;
+    point.y -= _textContainerOrigin.y;
+    
+    _startTrackingLocation = [_layoutManager glyphIndexForPoint:point inTextContainer:_textContainer fractionOfDistanceThroughGlyph:fraction];
     if (_startTrackingLocation == CPNotFound)
         _startTrackingLocation = [_textStorage length];
      
     [self setSelectedRange:CPMakeRange(_startTrackingLocation, 0) affinity:0 stillSelecting:YES];
-    [self setNeedsDisplay:YES];
 }
 
 - (void)mouseDragged:(CPEvent)event
 {
     var fraction = [],
-        index = [_layoutManager glyphIndexForPoint:[self convertPoint:[event locationInWindow] fromView:nil] inTextContainer:_textContainer fractionOfDistanceThroughGlyph:fraction];
+        point = [self convertPoint:[event locationInWindow] fromView:nil];
+    
+    // convert to container coordinate
+    point.x -= _textContainerOrigin.x;
+    point.y -= _textContainerOrigin.y;
+    
+    var index = [_layoutManager glyphIndexForPoint:point inTextContainer:_textContainer fractionOfDistanceThroughGlyph:fraction];
     if (index == CPNotFound)
         index = [_textStorage length];
     
@@ -414,8 +441,6 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
         [self setSelectedRange:CPMakeRange(index, _startTrackingLocation - index) affinity:0 stillSelecting:YES];
     else
         [self setSelectedRange:CPMakeRange(_startTrackingLocation, index - _startTrackingLocation) affinity:0 stillSelecting:YES];
-    
-    [self setNeedsDisplay:YES];
 }
 
 - (void)mouseUp:(CPEvent)event
@@ -500,6 +525,9 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)setTypingAttributes:(CPDictionary)attributes
 {
+    if (!attributes)
+        attributes = [CPDictionary dictionary];
+
     if (_delegateRespondsToSelectorMask & kDelegateRespondsTo_textView_shouldChangeTypingAttributes_toAttributes)
     {
         _typingAttributes = [_delegate textView:self shouldChangeTypingAttributes:_typingAttributes toAttributes:attributes];
@@ -513,7 +541,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
         if (![_typingAttributes containsKey:CPForegroundColorAttributeName])
             [_typingAttributes setObject:[self textColor] forKey:CPForegroundColorAttributeName];
-    }
+    }    
     [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeTypingAttributesNotification object:self];
 }
 
