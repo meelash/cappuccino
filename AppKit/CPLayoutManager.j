@@ -25,7 +25,7 @@
 @import "CPTypesetter.j"
 
 
-var _lineFragmentWithLocation = function(aList, aLocation)
+var _objectWithLocationInRange = function(aList, aLocation)
 {
     var i, c = aList.length;
     for (i = 0; i < c; i++)
@@ -36,7 +36,7 @@ var _lineFragmentWithLocation = function(aList, aLocation)
     return nil;
 }
 
-var _indexOfLineFragmentWithLocation = function(aList, aLocation)
+var _indexOfObjectWithLocationInRange = function(aList, aLocation)
 {
     var i, c = aList.length;
     for (i = 0; i < c; i++)
@@ -47,7 +47,7 @@ var _indexOfLineFragmentWithLocation = function(aList, aLocation)
     return CPNotFound;
 }
 
-var _lineFragmentsInRange = function(aList, aRange)
+var _objectsInRange = function(aList, aRange)
 {
     var list = [],
         c = aList.length,
@@ -127,6 +127,29 @@ var _lineFragmentsInRange = function(aList, aRange)
 }
 @end
 
+@implementation _CPTemporaryAttributes : CPObject
+{
+    CPDictionary _attributes;
+    CPRange _range;
+}
+- (id) initWithRange:(CPRange)aRange attributes:(CPDictionary)attributes
+{
+    self = [super init];
+    if (self)
+    {
+        _attributes = attributes;
+        _range = CPCopyRange(aRange);
+    }
+    return self;
+}
+- (CPString)description
+{
+    return [super description] +
+        "\n\t_range="+CPStringFromRange(_range) +
+        "\n\t_attributes="+[_attributes description];
+}
+@end
+
 /*! 
     @ingroup appkit
     @class CPLayoutManager
@@ -140,10 +163,10 @@ var _lineFragmentsInRange = function(aList, aRange)
 
     CPMutableArray _lineFragments;
     _CPLineFragment _extraLineFragment;
+
+    CPMutableArray _temporaryAttributes;
     
     BOOL _isValidatingLayoutAndGlyphs;
-    
-    CPMutableArray _textFragments;
 }
 - (id) init
 {
@@ -151,7 +174,6 @@ var _lineFragmentsInRange = function(aList, aRange)
     if (self)
     {
         _textContainers = [[CPMutableArray alloc] init];
-        _textFragments = [[CPMutableArray alloc] init];
         _lineFragments = [[CPMutableArray alloc] init];
         _typesetter = [CPTypesetter sharedSystemTypesetter];
         _isValidatingLayoutAndGlyphs = NO;
@@ -221,7 +243,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 {
     [self _validateLayoutAndGlyphs];
 
-    var fragments = _lineFragmentsInRange(_lineFragments, aRange),
+    var fragments = _objectsInRange(_lineFragments, aRange),
         rect = nil,
         c = [fragments count];
     for (var i = 0; i < c; i++)
@@ -309,14 +331,14 @@ var _lineFragmentsInRange = function(aList, aRange)
 
 - (void)invalidateDisplayForGlyphRange:(CPRange)range
 {    
-    var lineFragments = _lineFragmentsInRange(_lineFragments, range);
+    var lineFragments = _objectsInRange(_lineFragments, range);
     for (var i = 0; i < lineFragments.length; i++)
         [[lineFragments[i]._textContainer textView] setNeedsDisplayInRect:lineFragments[i]._fragmentRect];
 }
 
 - (void)invalidateLayoutForCharacterRange:(CPRange)aRange isSoft:(BOOL)flag actualCharacterRange:(CPRangePointer)actualCharRange
 {
-    var firstFragmentIndex = _indexOfLineFragmentWithLocation(_lineFragments, aRange.location);   
+    var firstFragmentIndex = _indexOfObjectWithLocationInRange(_lineFragments, aRange.location);   
     if (firstFragmentIndex == CPNotFound)
     {
         if (_lineFragments.length)
@@ -391,9 +413,9 @@ var _lineFragmentsInRange = function(aList, aRange)
                     if (CPRectIntersectsRect(aRect, frames[j]))
                     {
                         if (glyphRange.location == CPNotFound)
-                        glyphRange.location = fragment._range.location + j;
+                            glyphRange.location = fragment._range.location + j;
                         else
-                        glyphRange.length++;
+                            glyphRange.length++;
                     }
                 }
                 if (glyphRange.location != CPNotFound)
@@ -412,7 +434,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 - (void)drawBackgroundForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
     [self _validateLayoutAndGlyphs];
-    var lineFragments = _lineFragmentsInRange(_lineFragments, aRange);
+    var lineFragments = _objectsInRange(_lineFragments, aRange);
     if (!lineFragments.length)
         return;
 
@@ -421,17 +443,40 @@ var _lineFragmentsInRange = function(aList, aRange)
         lineFragmentIndex = 0,
         currentFragment = lineFragments[lineFragmentIndex],
         frames = [currentFragment glyphFramesWithTextStorage:_textStorage],
-        framesToPaint = Math.min(currentFragment._range.length, aRange.length);
+        framesToPaint = Math.min(currentFragment._range.length, aRange.length),
+        tempRange = CPMakeRange(0,0);
 
     while (painted != aRange.length)
     {
+        tempRange.location = aRange.location + painted;
+        tempRange.length = framesToPaint;
+        var temporaryAttributes = (_temporaryAttributes)?_objectsInRange(_temporaryAttributes, tempRange):nil;
+        
         CGContextSaveGState(ctx);
-        CGContextSetFillColor(ctx, currentFragment._backgroundColor);
-
         for (var i = 0; i < framesToPaint; i++)
+        {
+            var colorSetByTemporary = NO;
+            if (temporaryAttributes)
+            {
+                for (var j = 0; j < temporaryAttributes.length; j++)
+                {
+                    if (CPLocationInRange(tempRange.location + i, temporaryAttributes[j]._range))
+                    {
+                        if ([temporaryAttributes[j]._attributes containsKey:CPBackgroundColorAttributeName])
+                        {
+                            CGContextSetFillColor(ctx, [temporaryAttributes[j]._attributes objectForKey:CPBackgroundColorAttributeName]);
+                            colorSetByTemporary = YES;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (!colorSetByTemporary)
+                CGContextSetFillColor(ctx, currentFragment._backgroundColor);
+        
             CGContextFillRect(ctx, CPRectMake(aPoint.x + frames[i].origin.x, aPoint.y + frames[i].origin.y, 
                                     frames[i].size.width, frames[i].size.height));
-
+        }
         CGContextRestoreGState(ctx);
 
         painted += framesToPaint;
@@ -453,7 +498,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 - (void)drawGlyphsForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
     [self _validateLayoutAndGlyphs];
-    var lineFragments = _lineFragmentsInRange(_lineFragments, aRange);
+    var lineFragments = _objectsInRange(_lineFragments, aRange);
     if (!lineFragments.length)
         return;
 
@@ -523,18 +568,218 @@ var _lineFragmentsInRange = function(aList, aRange)
     return [self glyphIndexForPoint:point inTextContainer:container fractionOfDistanceThroughGlyph:nil];
 }
 
+- (void)_setAttributes:(CPDictionary)attributes toTemporaryAttributes:(_CPTemporaryAttributes)tempAttributes
+{
+    tempAttributes._attributes = attributes;
+}
+
+- (void)_addAttributes:(CPDictionary)attributes toTemporaryAttributes:(_CPTemporaryAttributes)tempAttributes
+{
+    [tempAttributes._attributes addEntriesFromDictionary:attributes];
+}
+
+- (void)_handleTemporaryAttributes:(CPDictionary)attributes forCharacterRange:(CPRange)charRange withSelector:(SEL)attributesOperation
+{
+    if (!_temporaryAttributes)
+        _temporaryAttributes = [[CPMutableArray alloc] init];
+    
+    var location = charRange.location,
+        length = 0,
+        dirtyRange = nil;
+
+    do {
+        var tempAttributesIndex = _indexOfObjectWithLocationInRange(_temporaryAttributes, location);
+        if (tempAttributesIndex != CPNotFound)
+        {
+            var tempAttributes = _temporaryAttributes[tempAttributesIndex];
+            
+            if (CPRangeInRange(charRange, tempAttributes._range))
+            {
+                [self performSelector:attributesOperation withObject:attributes withObject:tempAttributes];
+                
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+
+                location += tempAttributes._range.length;
+                length += tempAttributes._range.length;
+            }
+            else if (location == tempAttributes._range.location && CPMaxRange(tempAttributes._range) > CPMaxRange(charRange))
+            {
+                var maxRange = CPMaxRange(charRange),
+                splittedAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(maxRange, CPMaxRange(tempAttributes._range) - maxRange)
+                                     attributes:[tempAttributes._attributes copy]];
+                
+                if ([_temporaryAttributes count] == tempAttributesIndex+1)
+                    [_temporaryAttributes addObject:splittedAttribute];
+                else
+                    [_temporaryAttributes insertObject:splittedAttribute atIndex:tempAttributesIndex + 1];
+                
+                tempAttributes._range = CPMakeRange(tempAttributes._range.location, maxRange - tempAttributes._range.location);
+                [self performSelector:attributesOperation withObject:attributes withObject:tempAttributes];
+    
+                location += tempAttributes._range.length;
+                length += tempAttributes._range.length;
+                
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+                dirtyRange = CPUnionRange(dirtyRange, splittedAttribute._range);
+            }
+            else
+            {
+                var splittedAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(location, CPMaxRange(tempAttributes._range) - location)
+                                         attributes:[tempAttributes._attributes copy]];
+                
+                if ([_temporaryAttributes count] == tempAttributesIndex+1)
+                    [_temporaryAttributes addObject:splittedAttribute];
+                else
+                    [_temporaryAttributes insertObject:splittedAttribute atIndex:tempAttributesIndex + 1];
+                
+                tempAttributes._range = CPMakeRange(tempAttributes._range.location, location - tempAttributes._range.location);
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+                dirtyRange = CPUnionRange(dirtyRange, splittedAttribute._range);
+                
+                if (splittedAttribute._range.length <= charRange.length)
+                {
+                    location += splittedAttribute._range.length;
+                    length += splittedAttribute._range.length;
+                }
+                else
+                {
+                    var nextLocation = location + charRange.length,
+                        nextAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(nextLocation, CPMaxRange(splittedAttribute._range) - nextLocation)
+                                         attributes:[tempAttributes._attributes copy]];
+                    
+                    splittedAttribute._range = CPMakeRange(splittedAttribute._range.location, nextLocation - splittedAttribute._range.location);
+                    
+                    var insertIndex = [_temporaryAttributes indexOfObject:splittedAttribute];
+                    
+                    if ([_temporaryAttributes count] == insertIndex + 1)
+                        [_temporaryAttributes addObject:nextAttribute];
+                    else
+                        [_temporaryAttributes insertObject:nextAttribute atIndex:insertIndex + 1];
+                    
+                    length = charRange.length;
+                }
+                [self performSelector:attributesOperation withObject:attributes withObject:splittedAttribute];
+            }
+        }
+        else
+        {
+            [_temporaryAttributes addObject:[[_CPTemporaryAttributes alloc] initWithRange:charRange attributes:attributes]];
+            dirtyRange = CPCopyRange(charRange);
+            break;
+        }
+    } while (length != charRange.length);
+
+    if (dirtyRange)
+    {
+        [self invalidateDisplayForGlyphRange:dirtyRange];
+    }
+}
+
 - (void)setTemporaryAttributes:(CPDictionary)attributes forCharacterRange:(CPRange)charRange
 {
-    /* FIXME: stub */
+    [self _handleTemporaryAttributes:attributes forCharacterRange:charRange withSelector:@selector(_setAttributes:toTemporaryAttributes:)];
 }
 
 - (void)addTemporaryAttributes:(CPDictionary)attributes forCharacterRange:(CPRange)charRange
 {
-    /* FIXME: stub */
+    [self _handleTemporaryAttributes:attributes forCharacterRange:charRange withSelector:@selector(_addAttributes:toTemporaryAttributes:)];
 }
+
 - (void)removeTemporaryAttribute:(CPString)attributeName forCharacterRange:(CPRange)charRange
 {
-    /* FIXME: stub */
+    if (!_temporaryAttributes)
+        return;
+
+    var location = charRange.location,
+        length = 0,
+        dirtyRange = nil;
+    do {
+        var tempAttributesIndex = _indexOfObjectWithLocationInRange(_temporaryAttributes, location);
+        if (tempAttributesIndex != CPNotFound)
+        {
+            var tempAttributes = _temporaryAttributes[tempAttributesIndex];
+            
+            if (CPRangeInRange(charRange, tempAttributes._range))
+            {
+                location += tempAttributes._range.length;
+                length += tempAttributes._range.length;
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+                
+                [tempAttributes._attributes removeObjectForKey:attributeName];
+                if ([[tempAttributes._attributes allKeys] count] == 0)
+                    [_temporaryAttributes removeObjectAtIndex:tempAttributesIndex];
+            }
+            else if (location == tempAttributes._range.location && CPMaxRange(tempAttributes._range) > CPMaxRange(charRange))
+            {
+                var maxRange = CPMaxRange(charRange),
+                splittedAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(maxRange, CPMaxRange(tempAttributes._range) - maxRange)
+                                     attributes:[tempAttributes._attributes copy]];
+                
+                if ([_temporaryAttributes count] == tempAttributesIndex+1)
+                    [_temporaryAttributes addObject:splittedAttribute];
+                else
+                    [_temporaryAttributes insertObject:splittedAttribute atIndex:tempAttributesIndex + 1];
+                
+                tempAttributes._range = CPMakeRange(tempAttributes._range.location, maxRange - tempAttributes._range.location);
+                
+                location += tempAttributes._range.length;
+                length += tempAttributes._range.length;
+                
+                [tempAttributes._attributes removeObjectForKey:attributeName];
+                if ([[tempAttributes._attributes allKeys] count] == 0)
+                    [_temporaryAttributes removeObjectAtIndex:tempAttributesIndex];
+                    
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+                dirtyRange = CPUnionRange(dirtyRange, splittedAttribute._range);
+            }
+            else
+            {
+                var splittedAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(location, CPMaxRange(tempAttributes._range) - location)
+                                         attributes:[tempAttributes._attributes copy]];
+                
+                if ([_temporaryAttributes count] == tempAttributesIndex+1)
+                    [_temporaryAttributes addObject:splittedAttribute];
+                else
+                    [_temporaryAttributes insertObject:splittedAttribute atIndex:tempAttributesIndex + 1];
+                
+                tempAttributes._range = CPMakeRange(tempAttributes._range.location, location - tempAttributes._range.location);
+                
+                dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
+                dirtyRange = CPUnionRange(dirtyRange, splittedAttribute._range);
+
+                if (splittedAttribute._range.length < charRange.length)
+                {
+                    location += splittedAttribute._range.length;
+                    length += splittedAttribute._range.length;
+                }
+                else
+                {
+                    var nextLocation = location + charRange.length,
+                        nextAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(nextLocation, CPMaxRange(splittedAttribute._range) - nextLocation)
+                                         attributes:[tempAttributes._attributes copy]];
+
+                    splittedAttribute._range = CPMakeRange(splittedAttribute._range.location, nextLocation - splittedAttribute._range.location);
+                    var insertIndex = [_temporaryAttributes indexOfObject:splittedAttribute];
+
+                    if ([_temporaryAttributes count] == insertIndex + 1)
+                        [_temporaryAttributes addObject:nextAttribute];
+                    else
+                        [_temporaryAttributes insertObject:nextAttribute atIndex:insertIndex + 1];
+                    
+                    length = charRange.length;
+                }
+
+                [splittedAttribute._attributes removeObjectForKey:attributeName];
+                if ([[splittedAttribute._attributes allKeys] count] == 0)
+                    [_temporaryAttributes removeObject:splittedAttribute];
+            }
+        }
+        else break;
+    } while (length != charRange.length);
+    if (dirtyRange)
+    {
+        [self invalidateDisplayForGlyphRange:dirtyRange];
+    }
 }
 
 - (void)textContainerChangedTextView:(CPTextContainer)aContainer
@@ -594,7 +839,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 
 - (void)setLineFragmentRect:(CPRect)fragmentRect forGlyphRange:(CPRange)glyphRange usedRect:(CPRect)usedRect
 {
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphRange.location);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, glyphRange.location);
     if (lineFragment)
     {
         lineFragment._fragmentRect = CPRectCreateCopy(fragmentRect);
@@ -604,7 +849,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 
 - (void)setLocation:(CPPoint)aPoint forStartOfGlyphRange:(CPRange)glyphRange
 {
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphRange.location);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, glyphRange.location);
     if (lineFragment)
     {
         lineFragment._location = CPPointCreateCopy(aPoint);
@@ -667,7 +912,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 {
     [self _validateLayoutAndGlyphs];
     
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphIndex);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, glyphIndex);
     if (!lineFragment)
         return CPRectMakeZero();
  
@@ -683,7 +928,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 {
     [self _validateLayoutAndGlyphs];
     
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, glyphIndex);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, glyphIndex);
     if (!lineFragment)
         return CPRectMakeZero();
 
@@ -698,7 +943,7 @@ var _lineFragmentsInRange = function(aList, aRange)
 - (CPPoint)locationForGlyphAtIndex:(unsigned)index
 {
     [self _validateLayoutAndGlyphs];
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, index);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, index);
     if (lineFragment)
     {
         if (index == lineFragment._range.location)
@@ -715,7 +960,7 @@ var _lineFragmentsInRange = function(aList, aRange)
     if (!flag)
         [self _validateLayoutAndGlyphs];
 
-    var lineFragment = _lineFragmentWithLocation(_lineFragments, index);
+    var lineFragment = _objectWithLocationInRange(_lineFragments, index);
     if (lineFragment)
     {
         if (effectiveGlyphRange)
