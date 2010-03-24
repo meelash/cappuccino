@@ -63,6 +63,15 @@ var _objectsInRange = function(aList, aRange)
             else
                 break;
         }
+        else if (CPLocationInRange(CPMaxRange(aRange), aList[i]._range))
+        {
+            list.push(aList[i]);
+            break;
+        }
+        else if (CPRangeInRange(aRange, aList[i]._range))
+        {
+            list.push(aList[i]);
+        }
     }
     return list;
 }
@@ -451,7 +460,7 @@ var _objectsInRange = function(aList, aRange)
         tempRange.location = aRange.location + painted;
         tempRange.length = framesToPaint;
         var temporaryAttributes = (_temporaryAttributes)?_objectsInRange(_temporaryAttributes, tempRange):nil;
-        
+
         CGContextSaveGState(ctx);
         for (var i = 0; i < framesToPaint; i++)
         {
@@ -780,6 +789,20 @@ var _objectsInRange = function(aList, aRange)
     {
         [self invalidateDisplayForGlyphRange:dirtyRange];
     }
+}
+
+- (CPDictionary)temporaryAttributesAtCharacterIndex:(unsigned)index effectiveRange:(CPRangePointer)effectiveRange
+{
+    var tempAttribute = _objectWithLocationInRange(index);
+    if (!tempAttribute)
+        return nil;
+
+    if (effectiveRange)
+    {
+        effectiveRange.location = tempAttribute._range.location;
+        effectiveRange.length = tempAttribute._range.length;
+    }
+    return tempAttribute._attributes;
 }
 
 - (void)textContainerChangedTextView:(CPTextContainer)aContainer
