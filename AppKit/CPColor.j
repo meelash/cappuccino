@@ -385,6 +385,11 @@ var cachedBlackColor,
     return [[CPColor alloc] _initWithRGBA:[0.83, 0.83, 0.83, 1.0]];
 }
 
++ (CPColor)selectedTextBackgroundColor
+{
+    return [[CPColor alloc] _initWithRGBA:[0.38, 0.85, 1.0, 1.0]];
+}
+
 /*!
     Creates a color using a tile pattern with \c anImage
     @param the image to tile
