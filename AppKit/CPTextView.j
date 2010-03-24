@@ -28,7 +28,8 @@
 /*
     CPTextView Notifications
 */
-CPTextViewDidChangeSelectionNotification = @"CPTextViewDidChangeSelectionNotification";
+CPTextViewDidChangeSelectionNotification        = @"CPTextViewDidChangeSelectionNotification";
+CPTextViewDidChangeTypingAttributesNotification = @"CPTextViewDidChangeTypingAttributesNotification";
 
 /*
     CPSelectionGranularity
@@ -38,9 +39,11 @@ CPSelectByWord      = 1;
 CPSelectByParagraph = 2;
 
 
-var kDelegateRespondsTo_textShouldBeginEditing = 0x0001;
-var kDelegateRespondsTo_textView_doCommandBySelector = 0x0002;
-var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharacterRange = 0x0004;
+var kDelegateRespondsTo_textShouldBeginEditing                                          = 0x0001,
+    kDelegateRespondsTo_textView_doCommandBySelector                                    = 0x0002,
+    kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharacterRange = 0x0004,
+    kDelegateRespondsTo_textView_shouldChangeTextInRange_replacementString              = 0x0008,
+    kDelegateRespondsTo_textView_shouldChangeTypingAttributes_toAttributes              = 0x0010;
 
 /*! 
     @ingroup appkit
@@ -147,18 +150,27 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     {
         if ([_delegate respondsToSelector:@selector(textDidChange:)])
             [[CPNotificationCenter defaultCenter] addObserver:_delegate selector:@selector(textDidChange:) name:CPTextDidChangeNotification object:self];
-        
+
         if ([_delegate respondsToSelector:@selector(textViewDidChangeSelection:)])
             [[CPNotificationCenter defaultCenter] addObserver:_delegate selector:@selector(textViewDidChangeSelection:) name:CPTextViewDidChangeSelectionNotification object:self];
-            
+
+        if ([_delegate respondsToSelector:@selector(textViewDidChangeTypingAttributes:)])
+            [[CPNotificationCenter defaultCenter] addObserver:_delegate selector:@selector(textViewDidChangeTypingAttributes:) name:CPTextViewDidChangeTypingAttributesNotification object:self];
+
         if ([_delegate respondsToSelector:@selector(textView:doCommandBySelector:)])
             _delegateRespondsToSelectorMask |= kDelegateRespondsTo_textView_doCommandBySelector;
-            
+
         if ([_delegate respondsToSelector:@selector(textShouldBeginEditing:)])
             _delegateRespondsToSelectorMask |= kDelegateRespondsTo_textShouldBeginEditing;
-            
+
         if ([_delegate respondsToSelector:@selector(textView:willChangeSelectionFromCharacterRange:toCharacterRange:)])
             _delegateRespondsToSelectorMask |= kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharacterRange;
+
+        if ([_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
+            _delegateRespondsToSelectorMask |= kDelegateRespondsTo_textView_shouldChangeTextInRange_replacementString;
+
+        if ([_delegate respondsToSelector:@selector(textView:shouldChangeTypingAttributes:toAttributes:)])
+            _delegateRespondsToSelectorMask |= kDelegateRespondsTo_textView_shouldChangeTypingAttributes_toAttributes;
     }
 }
 
@@ -260,6 +272,10 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
     var shouldChange = YES;
     if (_delegateRespondsToSelectorMask & kDelegateRespondsTo_textShouldBeginEditing)
         shouldChange = [_delegate textShouldBeginEditing:self];
+
+    if (shouldChange && (_delegateRespondsToSelectorMask & kDelegateRespondsTo_textView_shouldChangeTextInRange_replacementString))
+        shouldChange = [_delegate textView:self shouldChangeTextInRange:aRange replacementString:aString];
+
     return shouldChange;
 }
 
@@ -484,13 +500,21 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
 - (void)setTypingAttributes:(CPDictionary)attributes
 {
-    _typingAttributes = [attributes copy];
-    /* check that new attributes contains essentials one's */
-    if (![_typingAttributes containsKey:CPFontAttributeName])
-        [_typingAttributes setObject:[self font] forKey:CPFontAttributeName];
+    if (_delegateRespondsToSelectorMask & kDelegateRespondsTo_textView_shouldChangeTypingAttributes_toAttributes)
+    {
+        _typingAttributes = [_delegate textView:self shouldChangeTypingAttributes:_typingAttributes toAttributes:attributes];
+    }
+    else
+    {
+        _typingAttributes = [attributes copy];
+        /* check that new attributes contains essentials one's */
+        if (![_typingAttributes containsKey:CPFontAttributeName])
+            [_typingAttributes setObject:[self font] forKey:CPFontAttributeName];
 
-    if (![_typingAttributes containsKey:CPForegroundColorAttributeName])
-        [_typingAttributes setObject:[self textColor] forKey:CPForegroundColorAttributeName];
+        if (![_typingAttributes containsKey:CPForegroundColorAttributeName])
+            [_typingAttributes setObject:[self textColor] forKey:CPForegroundColorAttributeName];
+    }
+    [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeTypingAttributesNotification object:self];
 }
 
 - (CPDictionary)typingAttributes
@@ -784,7 +808,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
         wordRange.length = 1;
         return wordRange;
     }
-    
+
     do
     {
         lastIndex = string.lastIndexOf(characterSet[searchIndex++], index);
@@ -792,7 +816,7 @@ var kDelegateRespondsTo_textView_willChangeSelectionFromCharacterRange_toCharact
 
     if (lastIndex != CPNotFound)
         wordRange.location = lastIndex + 1;
-    
+
     lastIndex = CPNotFound;
     searchIndex = 0;
 
