@@ -606,7 +606,7 @@ var supportsNativeDragAndDrop = [CPPlatform supportsDragAndDrop];
                             else
                                 _keyCode = aDOMEvent.keyCode;
 
-                            if (!_keyCode && CPBrowserIsEngine(CPWebKitBrowserEngine) && aDOMEvent.keyIdentifier !== "Unidentified")
+                            if (!_keyCode && aDOMEvent.keyIdentifier && aDOMEvent.keyIdentifier !== "Unidentified")
                                 _keyCode = parseInt("0x"+aDOMEvent.keyIdentifier.substr(2,4));
 
                             var characters = String.fromCharCode(_keyCode).toLowerCase();
