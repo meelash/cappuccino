@@ -229,11 +229,27 @@ var sharedObject = [CPObject new];
     [string replaceCharactersInRange:CPMakeRange(10, 5) withString:"firetruck red"];
     
     [self assertTrue:[string string]==="The quick firetruck red fox jumped over the lazy dog." message:"replacing 'brown' with 'firetruck red' produced: "+[string string].substr(10, 5)];
-
+    testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 10, {a:2, b:"baz", c:sharedObject}, self);
     testAttributesAtIndexWithValues(string, 21, {a:2, b:"baz", c:sharedObject}, self);
     testAttributesAtIndexWithValues(string, 40, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
     testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
     
+    [string replaceCharactersInRange:CPMakeRange(4, 20) withString:""];
+    [self assertTrue:[string string]==="The fox jumped over the lazy dog." message:"removing 'quick firetruck red ' produced: "+[string string]];
+
+    testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 6, {a:2, b:"baz", c:sharedObject}, self);
+    testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
+    
+    [string replaceCharactersInRange:CPMakeRange(0, 7) withString:"The cat"];
+    [self assertTrue:[string string]==="The cat jumped over the lazy dog." message:"replacing 'The fox' with 'The cat' produced: "+[string string]];
+
+    testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 6, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
+
+
     /* test on an empty string */
     string = [[CPAttributedString alloc] initWithString:""];
     var range = CPMakeRange(0, [string length]);
@@ -620,6 +636,7 @@ var sharedObject = [CPObject new];
     [string setAttributedString:[self stringForTesting]];
     [self assertTrue:[[self stringForTesting] isEqual:string] message:"setAttributedString should have made strings equal, but they were not"];
 }
+
 
 @end
 
