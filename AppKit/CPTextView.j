@@ -66,6 +66,8 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     CPDictionary _selectedTextAttributes;
     int _selectionGranularity;
     
+    CPColor _insertionPointColor;
+
     CPDictionary _typingAttributes;
     
     BOOL _isFirstResponder;
@@ -109,6 +111,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
         _selectionGranularity = CPSelectByCharacter;
         _selectedTextAttributes = [CPDictionary dictionaryWithObject:[CPColor selectedTextBackgroundColor] forKey:CPBackgroundColorAttributeName];
 
+        _insertionPointColor = [CPColor blackColor];
         _textColor = [CPColor blackColor];
         _font = [CPFont fontWithName:@"Helvetica" size:12.0];
         
@@ -302,25 +305,14 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)_blinkCarret:(CPTimer)aTimer
 {
-    if (_isFirstResponder)
-    {
-        _drawCarret = !_drawCarret;
-        if (_selectionRange.location == [_textStorage length])
-            _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location - 1, 1) inTextContainer:_textContainer];
-        else
-            _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location, 1) inTextContainer:_textContainer];
-        if (CPRectIsEmpty(_carretRect))
-            _carretRect = CPRectMake(_textContainerOrigin.x, _textContainerOrigin.y, 1, [[self font] size]);
-        else
-        {
-            _carretRect.origin.x += _textContainerOrigin.x;
-            _carretRect.origin.y += _textContainerOrigin.y;
-            if (_selectionRange.location == [_textStorage length])
-                _carretRect.origin.x += _carretRect.size.width;
-            _carretRect.size.width = 1;
-        }
-        [self setNeedsDisplayInRect:_carretRect];
-    }
+    /*
+        FIXME: _carretTimer is not invalidate when we have a _selectionRange ??!
+        
+    if (_selectionRange.length)
+        CPLog.trace(_cmd);
+    */
+    _drawCarret = !_drawCarret;
+    [self setNeedsDisplayInRect:_carretRect];
 }
 
 - (void)drawRect:(CPRect)aRect
@@ -329,13 +321,19 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     CGContextClearRect(ctx, aRect);
 
     /*
-        FIXME: used CPLayoutManager rectArrayForGlyphRange:withinSelectedGlyphRange:inTextContainer:rectCount: 
-        for highlighting selected 'glyphs'.
-        
-        Also selected background color have to hide other background painting (normal or temporary) see LayoutManagerDemo
+        FIXME: _carretTimer is not invalidate when _selectionRange is not empty.
+        So _selectionRange is redraw each time that _blinkCarret set needs display in _carretRect.
+        So clip to aRect or better FIX _carretTimer invalidation.
     */
+
     if (!CPEmptyRange(_selectionRange))
     {
+        /*
+            FIXME: used CPLayoutManager rectArrayForGlyphRange:withinSelectedGlyphRange:inTextContainer:rectCount: 
+            for highlighting selected 'glyphs'.
+        
+            Also selected background color have to hide other background painting (normal or temporary) see LayoutManagerDemo
+        */
         var rect = [_layoutManager boundingRectForGlyphRange:_selectionRange inTextContainer:_textContainer];
         CGContextSaveGState(ctx);
     
@@ -354,15 +352,8 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
         [_layoutManager drawGlyphsForGlyphRange:range atPoint:_textContainerOrigin];
     }
     
-    if ((_selectionRange.length == 0) && _drawCarret)
-    {
-        CGContextSaveGState(ctx);
-        
-        CGContextSetLineWidth(ctx, 1);
-        CGContextSetFillColor(ctx, [CPColor blackColor]);
-        CGContextFillRect(ctx, _carretRect);
-        CGContextRestoreGState(ctx);
-    }
+    if ([self shouldDrawInsertionPoint])
+        [self drawInsertionPointInRect:_carretRect color:_insertionPointColor turnedOn:_drawCarret];
 }
 
 - (void)setSelectedRange:(CPRange)range
@@ -377,13 +368,18 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     else
         _selectionRange = CPCopyRange(range);
 
+    /*
     if (_selectionRange.length)
         [_layoutManager invalidateDisplayForGlyphRange:_selectionRange];
     else
         [self setNeedsDisplay:YES];
-
+    */
+    [self setNeedsDisplay:YES];
+    
     if (!selecting)
     {
+        [self updateInsertionPointStateAndRestartTimer:(_selectionRange.length === 0)];
+
         [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeSelectionNotification object:self];
         
         // TODO: check multiple font in selection
@@ -413,6 +409,10 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     var fraction = [],
         point = [self convertPoint:[event locationInWindow] fromView:nil];
     
+    /* stop _carretTimer */
+    [_carretTimer invalidate];
+    _carretTimer = nil;
+
     // convert to container coordinate
     point.x -= _textContainerOrigin.x;
     point.y -= _textContainerOrigin.y;
@@ -511,14 +511,15 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 - (BOOL)becomeFirstResponder
 {    
     _isFirstResponder = YES;
-    _drawCarret = YES;
-    _carretTimer = [CPTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(_blinkCarret:) userInfo:nil repeats:YES];
+    [self updateInsertionPointStateAndRestartTimer:YES];
     [[CPFontManager sharedFontManager] setSelectedFont:[self font] isMultiple:NO];
     return YES;
 }
+
 - (BOOL)resignFirstResponder
 {
     [_carretTimer invalidate];
+    _carretTimer = nil;
     _isFirstResponder = NO;
     return YES;
 }
@@ -902,5 +903,64 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 - (void)setSelectionGranularity:(CPSelectionGranularity)granularity
 {
     _selectionGranularity = granularity;
+}
+
+- (CPColor)insertionPointColor
+{
+    return _insertionPointColor;
+}
+
+- (void)setInsertionPointColor:(CPColor)aColor
+{
+    _insertionPointColor = aColor;
+}
+
+- (BOOL)shouldDrawInsertionPoint
+{
+    return (_isFirstResponder && _selectionRange.length === 0);
+}
+
+- (void)drawInsertionPointInRect:(CPRect)aRect color:(CPColor)aColor turnedOn:(BOOL)flag
+{
+    if (flag)
+    {
+        var ctx = [[CPGraphicsContext currentContext] graphicsPort];
+        CGContextSaveGState(ctx);
+        CGContextSetLineWidth(ctx, 1);
+        CGContextSetFillColor(ctx, aColor);
+        CGContextFillRect(ctx, aRect);
+        CGContextRestoreGState(ctx);
+    }
+}
+
+- (void)updateInsertionPointStateAndRestartTimer:(BOOL)flag
+{
+    if (_selectionRange.location == [_textStorage length])
+    {
+        if ([_layoutManager extraLineFragmentTextContainer] === _textContainer)
+            _carretRect = [_layoutManager extraLineFragmentUsedRect];
+        else
+        {
+            _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location - 1, 1) inTextContainer:_textContainer];
+            _carretRect.origin.x += _carretRect.size.width;
+        }
+    }
+    else
+        _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location, 1) inTextContainer:_textContainer];
+
+    if (CPRectIsEmpty(_carretRect))
+        _carretRect = CPRectMake(_textContainerOrigin.x, _textContainerOrigin.y, 1, [[self font] size]);
+    else
+    {
+        _carretRect.origin.x += _textContainerOrigin.x;
+        _carretRect.origin.y += _textContainerOrigin.y;            
+        _carretRect.size.width = 1;
+    }
+
+    if (flag)
+    {
+        _drawCarret = flag;
+        _carretTimer = [CPTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(_blinkCarret:) userInfo:nil repeats:YES];
+    }
 }
 @end
