@@ -575,10 +575,8 @@
         if (startingIndex != CPNotFound)
         {
             var startingRangeEntry = _rangeEntries[startingIndex];
-            
-            if ( (aRange.location - aRange.length >= startingRangeEntry.range.location && CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range))
-                || aRange.length <= startingRangeEntry.range.length && CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range)
-                )
+
+            if (CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range))
             {
                 startingRangeEntry.range.length -= aRange.length;
                 startingIndex += 1;
