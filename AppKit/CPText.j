@@ -19,12 +19,27 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
- 
+
+/*
+    CPText notifications
+*/
 CPTextDidBeginEditingNotification = @"CPTextDidBeginEditingNotification";
 CPTextDidChangeNotification = @"CPTextDidChangeNotification";
 CPTextDidEndEditingNotification = @"CPTextDidEndEditingNotification";
 
-/*! 
+CPParagraphSeparatorCharacter = 0x2029;
+CPLineSeparatorCharacter      = 0x2028;
+CPTabCharacter                = 0x0009;
+CPFormFeedCharacter           = 0x000c;
+CPNewlineCharacter            = 0x000a;
+CPCarriageReturnCharacter     = 0x000d;
+CPEnterCharacter              = 0x0003;
+CPBackspaceCharacter          = 0x0008;
+CPBackTabCharacter            = 0x0019;
+CPDeleteCharacter             = 0x007f;
+
+
+/*!
     @ingroup appkit
     @class CPText
 */
