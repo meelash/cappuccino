@@ -227,14 +227,14 @@ var sharedObject = [CPObject new];
     var string = [self stringForTesting];
 
     [string replaceCharactersInRange:CPMakeRange(10, 5) withString:"firetruck red"];
-    
+
     [self assertTrue:[string string]==="The quick firetruck red fox jumped over the lazy dog." message:"replacing 'brown' with 'firetruck red' produced: "+[string string].substr(10, 5)];
     testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
     testAttributesAtIndexWithValues(string, 10, {a:2, b:"baz", c:sharedObject}, self);
     testAttributesAtIndexWithValues(string, 21, {a:2, b:"baz", c:sharedObject}, self);
     testAttributesAtIndexWithValues(string, 40, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
     testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
-    
+
     [string replaceCharactersInRange:CPMakeRange(4, 20) withString:""];
     [self assertTrue:[string string]==="The fox jumped over the lazy dog." message:"removing 'quick firetruck red ' produced: "+[string string]];
 
@@ -247,6 +247,15 @@ var sharedObject = [CPObject new];
 
     testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
     testAttributesAtIndexWithValues(string, 6, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 7, {a:2, b:"baz", c:sharedObject}, self);
+    testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
+
+    [string replaceCharactersInRange:CPMakeRange(4, 24) withString:"brave"];
+    [self assertTrue:[string string]==="The brave dog." message:"replacing 'cat jumped over the lazy' with 'brave' produced: "+[string string]];
+
+    testAttributesAtIndexWithValues(string, 0, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 5, {a:1, b:"bar", c:sharedObject, d:20}, self);
+    testAttributesAtIndexWithValues(string, 12, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
     testAttributesAtIndexWithValues(string, [string length] - 1, {a:37, b:"baz", c:1, d:20, e:55, f:43}, self);
 
 
