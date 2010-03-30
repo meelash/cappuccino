@@ -180,6 +180,9 @@ var _CPLexicalFontWeights = nil,
     _fontAction = CPAddTraitFontAction;
     _currentFontTrait = [sender tag];
     [self sendAction];
+
+    if (_selectedFont)
+        [self setSelectedFont:[self convertFont:_selectedFont] isMultiple:_isMultiple];
 }
 
 /*!
@@ -190,6 +193,9 @@ var _CPLexicalFontWeights = nil,
 {
     _fontAction = [sender tag];
     [self sendAction];
+
+    if (_selectedFont)
+        [self setSelectedFont:[self convertFont:_selectedFont] isMultiple:_isMultiple];
 }
 
 /*!
@@ -200,6 +206,9 @@ var _CPLexicalFontWeights = nil,
 {
     _fontAction = CPViaPanelFontAction;
     [self sendAction];
+
+    if (_selectedFont)
+        [self setSelectedFont:[self convertFont:_selectedFont] isMultiple:_isMultiple];
 }
 
 /*!
@@ -347,7 +356,7 @@ var _CPLexicalFontWeights = nil,
         case CPSizeUpFontAction:
             newFont = [self convertFont:aFont toSize:[aFont size] + 1.0]; /* any limit ? */
             break;
-            
+
         case CPSizeDownFontAction:
             if ([aFont size] > 1)
                 newFont = [self convertFont:aFont toSize:[aFont size] - 1.0];
@@ -359,7 +368,6 @@ var _CPLexicalFontWeights = nil,
             newFont = aFont;
             break;
     }
-    _fontAction = CPNoFontChangeAction;
     return newFont;
 }
 
