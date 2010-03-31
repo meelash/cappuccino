@@ -503,9 +503,6 @@
     inherit the attributes of the first character in the range that they
     replace or in the case if a 0 range length, the first character before of
     after the insert (after if the insert is at location 0).
-    @note the replacement string need not be the same length as the range
-    being replaced. The full \c aString is inserted and thus the
-    receiver's length changes to match this
     @param aRange the range of characters to replace.
     @param aString the string to replace the specified characters in the
     receiver.
@@ -514,43 +511,92 @@
 {
     [self beginEditing];
 
+    if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+        [CPException raise:CPRangeException 
+                    reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
+
     if (!aString)
-        aString = "";
+    {
+        [self deleteCharactersInRange:aRange];
+        [self endEditing];
+        return;
+    }
 
     _string = _string.substring(0, aRange.location) + aString + _string.substring(CPMaxRange(aRange));
 
-    if (_string.length)
+    var startingIndex = [self _indexOfEntryWithIndex:aRange.location];
+    if (startingIndex == CPNotFound)
     {
-        var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
-        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange)-1, 0)];
-
-        if (startingIndex != CPNotFound && endingIndex != CPNotFound)
-        {
-            var startingRangeEntry = _rangeEntries[startingIndex],
-                endingRangeEntry = _rangeEntries[endingIndex],
-                additionalLength = aString.length - aRange.length;
-
-            if (startingIndex == endingIndex)
-                startingRangeEntry.range.length += additionalLength;
-            else
-            {
-                endingRangeEntry.range.length = CPMaxRange(endingRangeEntry.range) - CPMaxRange(aRange);
-                endingRangeEntry.range.location = CPMaxRange(aRange);
-
-                startingRangeEntry.range.length = CPMaxRange(aRange) - startingRangeEntry.range.location;
-
-                _rangeEntries.splice(startingIndex, endingIndex - startingIndex);
-            }
-
-            endingIndex = startingIndex + 1;
-
-            while(endingIndex < _rangeEntries.length)
-                _rangeEntries[endingIndex++].range.location+=additionalLength;
-        }
+        _rangeEntries[_rangeEntries.length -1].range.length += aString.length;
     }
     else
     {
-        _rangeEntries = [makeRangeEntry(CPMakeRange(0, 0), [CPDictionary dictionary])];
+        var startingRangeEntry = _rangeEntries[startingIndex];
+        
+        if (CPMaxRange(aRange) <= CPMaxRange(startingRangeEntry.range))
+        {
+            var newLength = startingRangeEntry.range.length - aRange.length + aString.length,
+                delta = newLength - startingRangeEntry.range.length;
+
+            startingRangeEntry.range.length = newLength;
+
+            startingIndex += 1;
+            while(startingIndex < _rangeEntries.length)
+                _rangeEntries[startingIndex++].range.location += delta;
+        }
+        else if (aString.length >= aRange.length)
+        {
+            var newLength = aRange.location - startingRangeEntry.range.location + aString.length,
+                delta = newLength - startingRangeEntry.range.length;
+
+            startingRangeEntry.range.length = newLength;
+
+            var current = startingIndex + 1,
+            end = _rangeEntries.length;
+
+            while (current < end)
+            {
+                if (CPRangeInRange(aRange, _rangeEntries[current].range))
+                {
+                    _rangeEntries.splice(current,1);
+                    end--;
+                }
+                else if (CPMaxRange(aRange) < CPMaxRange(_rangeEntries[current].range))
+                {
+                    _rangeEntries[current].range.location += delta;
+                    _rangeEntries[current].range.length -= delta;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            var newLength = aRange.location - startingRangeEntry.range.location + aString.length,
+                delta = aRange.location + newLength - aRange.length;
+
+            startingRangeEntry.range.length = newLength;
+
+            var current = startingIndex + 1,
+            end = _rangeEntries.length;
+
+            while (current < end)
+            {
+                if (CPRangeInRange(aRange, _rangeEntries[current].range))
+                {
+                    _rangeEntries.splice(current,1);
+                    end--;
+                }
+                else if (CPMaxRange(aRange) < CPMaxRange(_rangeEntries[current].range))
+                {
+                    _rangeEntries[current].range.length = CPMaxRange(_rangeEntries[current].range) - CPMaxRange(aRange);
+                    _rangeEntries[current].range.location += delta;
+                    break;
+                }
+            }
+            current += 1;
+            while(current < end)
+                _rangeEntries[current++].range.location += delta;
+        }
     }
     [self endEditing];
 }
@@ -665,12 +711,21 @@
 {
     [self beginEditing];
 
+   if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+        [CPException raise:CPRangeException 
+                    reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
+
+    if (!aDictionary)
+        [CPException raise:CPInvalidArgumentException reason:"-"+_cmd+" tried to add nil attributes."];
+
     var startingEntryIndex = [self _indexOfRangeEntryForIndex:aRange.location splitOnMaxIndex:YES],
         endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES];
 
     if (startingEntryIndex == CPNotFound)
-        startingEntryIndex = 0;
-        
+    {
+        [self endEditing];
+        return;
+    }
     if (endingEntryIndex == CPNotFound)
         endingEntryIndex = _rangeEntries.length;
 
