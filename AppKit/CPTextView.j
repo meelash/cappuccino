@@ -305,12 +305,6 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)_blinkCarret:(CPTimer)aTimer
 {
-    /*
-        FIXME: _carretTimer is not invalidate when we have a _selectionRange ??!
-        
-    if (_selectionRange.length)
-        CPLog.trace(_cmd);
-    */
     _drawCarret = !_drawCarret;
     [self setNeedsDisplayInRect:_carretRect];
 }
@@ -319,12 +313,6 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 {
     var ctx = [[CPGraphicsContext currentContext] graphicsPort];
     CGContextClearRect(ctx, aRect);
-
-    /*
-        FIXME: _carretTimer is not invalidate when _selectionRange is not empty.
-        So _selectionRange is redraw each time that _blinkCarret set needs display in _carretRect.
-        So clip to aRect or better FIX _carretTimer invalidation.
-    */
 
     if (!CPEmptyRange(_selectionRange))
     {
@@ -378,7 +366,8 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     
     if (!selecting)
     {
-        [self updateInsertionPointStateAndRestartTimer:(_selectionRange.length === 0)];
+        if (_isFirstResponder)
+            [self updateInsertionPointStateAndRestartTimer:(_selectionRange.length === 0)];
 
         [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeSelectionNotification object:self];
         
@@ -509,7 +498,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 }
 
 - (BOOL)becomeFirstResponder
-{    
+{
     _isFirstResponder = YES;
     [self updateInsertionPointStateAndRestartTimer:YES];
     [[CPFontManager sharedFontManager] setSelectedFont:[self font] isMultiple:NO];
