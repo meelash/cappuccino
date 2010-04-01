@@ -511,7 +511,7 @@
 {
     [self beginEditing];
 
-    if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+    if (!aRange || aRange.location < 0 || CPMaxRange(aRange) > _string.length)
         [CPException raise:CPRangeException 
                     reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
 
@@ -608,8 +608,8 @@
 - (void)deleteCharactersInRange:(CPRange)aRange
 {
     [self beginEditing];
-    
-    if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+
+    if (!aRange || aRange.location < 0 || CPMaxRange(aRange) > _string.length)
         [CPException raise:CPRangeException 
                     reason:"-deleteCharactersInRange invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
 
@@ -678,14 +678,23 @@
 {
     [self beginEditing];
 
+    if (!aRange || aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+        [CPException raise:CPRangeException 
+                    reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
+
     var startingEntryIndex = [self _indexOfRangeEntryForIndex:aRange.location splitOnMaxIndex:YES],
         endingEntryIndex = [self _indexOfRangeEntryForIndex:CPMaxRange(aRange) splitOnMaxIndex:YES];
 
     if (startingEntryIndex == CPNotFound)
-        startingEntryIndex = 0;
-
+    {
+        [self endEditing];
+        return;
+    }
     if (endingEntryIndex == CPNotFound)
         endingEntryIndex = _rangeEntries.length;
+
+    if (!aDictionary)
+        aDictionary = [CPDictionary dictionary];
 
     var current = startingEntryIndex;
     while (current < endingEntryIndex)
@@ -711,7 +720,7 @@
 {
     [self beginEditing];
 
-   if (aRange.location < 0 || CPMaxRange(aRange) > _string.length)
+   if (!aRange || aRange.location < 0 || CPMaxRange(aRange) > _string.length)
         [CPException raise:CPRangeException 
                     reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
 
