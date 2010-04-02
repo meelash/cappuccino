@@ -356,18 +356,15 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     else
         _selectionRange = CPCopyRange(range);
 
-    /*
     if (_selectionRange.length)
         [_layoutManager invalidateDisplayForGlyphRange:_selectionRange];
     else
         [self setNeedsDisplay:YES];
-    */
-    [self setNeedsDisplay:YES];
     
     if (!selecting)
     {
         if (_isFirstResponder)
-            [self updateInsertionPointStateAndRestartTimer:(_selectionRange.length === 0)];
+            [self updateInsertionPointStateAndRestartTimer:((_selectionRange.length === 0) && ![_carretTimer isValid])];
 
         [[CPNotificationCenter defaultCenter] postNotificationName:CPTextViewDidChangeSelectionNotification object:self];
         
