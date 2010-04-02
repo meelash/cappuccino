@@ -2,7 +2,7 @@
  * CPFontPanel.j
  * AppKit
  *
- * Created by Emmanuel Maillard on 06/03/10.
+ * Created by Emmanuel Maillard on 06/03/2010.
  * Copyright Emmanuel Maillard 2010.
  *
  * This library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 
 @import <AppKit/CPFontManager.j>
 @import <AppKit/CPPanel.j>
+@import "CPLayoutManager.j"
 
 /*
     Collection indexes
@@ -96,6 +97,51 @@ var _sharedFontPanel = nil;
 }
 @end
 
+@implementation _CPFontPanelSampleView : CPView
+{
+    CPLayoutManager _layoutManager;
+    CPTextStorage _textStorage;
+    CPTextContainer _textContainer;
+}
+- (id)initWithFrame:(CPRect)rect
+{
+    self = [super initWithFrame:rect];
+    if (self)
+    {
+        _textStorage = [[CPTextStorage alloc] init];   
+        _layoutManager = [[CPLayoutManager alloc] init];
+
+        _textContainer = [[CPTextContainer alloc] init];
+        [_layoutManager addTextContainer:_textContainer];
+    
+        [_textStorage addLayoutManager:_layoutManager];
+    }
+    return self;
+}
+
+- (void)setAttributedString:(CPAttributedString)aSting
+{
+    [_textStorage replaceCharactersInRange:CPMakeRange(0, [_textStorage length]) withAttributedString:aSting];
+    [self setNeedsDisplay:YES];
+}
+
+- (void)drawRect:(CPRect)rect
+{
+    var ctx = [[CPGraphicsContext currentContext] graphicsPort],
+        glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer],
+        usedRect = [_layoutManager usedRectForTextContainer:_textContainer],
+        bounds = [self bounds],
+        pos = CPMakePoint((bounds.size.width - usedRect.size.width) / 2.0, (bounds.size.height - usedRect.size.height) / 2.0);
+
+    CGContextSaveGState(ctx);
+    CGContextSetFillColor(ctx, [CPColor whiteColor]);
+    CGContextFillRect(ctx, bounds);
+    CGContextRestoreGState(ctx);
+    
+    [_layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:pos];
+}
+@end
+
 /*!
     @ingroup appkit
     @class CPFontPanel
@@ -109,7 +155,7 @@ var _sharedFontPanel = nil;
     CPTextField _sizeField;
     CPCollectionView _sizeCollectionView;
     
-    CPTextField _sampleLabel; /* use a CPTextView */
+    _CPFontPanelSampleView _sampleView;
     
     CPArray _availableFonts;
     
@@ -243,7 +289,6 @@ var _sharedFontPanel = nil;
     [button sizeToFit];
     [button setBordered:NO];
     [button setAutoresizingMask:CPViewMinXMargin|CPViewMaxXMargin];
-    //[button setEnabled:NO];
 
     [_toolbarView addSubview:button];
 
@@ -254,7 +299,6 @@ var _sharedFontPanel = nil;
     [button sizeToFit];
     [button setBordered:NO];
     [button setAutoresizingMask:CPViewMinXMargin|CPViewMaxXMargin];
-    //[button setEnabled:NO];
 
     [_toolbarView addSubview:button];
 
@@ -353,13 +397,12 @@ var _sharedFontPanel = nil;
     var splitView = [[CPSplitView alloc] initWithFrame:aFrame];
     [splitView setAutoresizingMask:CPViewWidthSizable|CPViewMaxYMargin];
     [splitView setVertical:NO];
-    
+
     [splitView addSubview:upperView];
 
-    _sampleLabel = [CPTextField labelWithTitle:@""];
-    [_sampleLabel setFrame:CGRectMake(0, 0, CGRectGetWidth(contentBounds), 0)];
-    [_sampleLabel setBackgroundColor:[CPColor whiteColor]];
-    [splitView addSubview:_sampleLabel];
+    _sampleView = [[_CPFontPanelSampleView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(contentBounds), 0)];
+    [_sampleView setBackgroundColor:[CPColor whiteColor]];
+    [splitView addSubview:_sampleView];
 
     [contentView addSubview:splitView];    
 }
@@ -420,7 +463,6 @@ var _sharedFontPanel = nil;
             CPLog.trace(@"FIXME: -["+[self className]+" "+_cmd+"] unhandled _fontChanges: "+_fontChanges);
            break;
     }
-    _fontChanges = kNothingChanged;
     return newFont;
 }
 
@@ -433,11 +475,18 @@ var _sharedFontPanel = nil;
 {
     [self _setupContents];
 
-    [_fontNameCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:[_availableFonts indexOfObject:[font familyName]]]];
-    [_sizeCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:[self _sizeCollectionIndexWithSize:[font size]]]];
-    [_sizeField setIntValue:[font size]];
-    
-    /* TODO: ask CPFontManager for traits */
+    /* FIXME: change only if effective change as CPCollectionView send collectionViewDidChangeSelection: in setSelectionIndexes, not only
+        on user action. */
+    var index = [[_fontNameCollectionView selectionIndexes] firstIndex];
+    if (index != CPNotFound && [_availableFonts objectAtIndex:index] !== [font familyName])
+        [_fontNameCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:[_availableFonts indexOfObject:[font familyName]]]];
+
+    if ([_sizeField floatValue] != [font size])
+    {
+        [_sizeCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:[self _sizeCollectionIndexWithSize:[font size]]]];
+        [_sizeField setIntValue:[font size]];
+    }
+    // TODO: ask CPFontManager for traits //
     var typefaceIndex = kTypefaceIndex_Normal,
     symbolicTraits = [[font fontDescriptor] symbolicTraits];
     if ((symbolicTraits & CPFontItalicTrait) && (symbolicTraits & CPFontBoldTrait))
@@ -446,7 +495,15 @@ var _sharedFontPanel = nil;
         typefaceIndex = kTypefaceIndex_Italic;
     else if (symbolicTraits & CPFontBoldTrait)
         typefaceIndex = kTypefaceIndex_Bold;
-    [_typefaceCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:typefaceIndex]];
+        
+    index = [[_typefaceCollectionView selectionIndexes] firstIndex];
+    if (index != CPNotFound && index != typefaceIndex)
+        [_typefaceCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:typefaceIndex]];
+
+    [_sampleView setAttributedString:
+                [[CPAttributedString alloc] initWithString:[font familyName] 
+                                                attributes:[CPDictionary dictionaryWithObjects:[font, [CPColor blackColor]] forKeys:[CPFontAttributeName, CPForegroundColorAttributeName]]]
+                                ];
     _fontChanges = kNothingChanged;
 }
 
@@ -498,13 +555,11 @@ var _sharedFontPanel = nil;
     var index = [[aCollectionView selectionIndexes] firstIndex];
     if (aCollectionView === _fontNameCollectionView)
     {
-        // TODO:update preview
         _fontChanges = kFontNameChanged;
         [[CPFontManager sharedFontManager] modifyFontViaPanel:self];
     }
     else if (aCollectionView === _typefaceCollectionView)
     {
-        // TODO:update preview
         _fontChanges = kTypefaceChanged;
         [[CPFontManager sharedFontManager] modifyFontViaPanel:self];
     }
@@ -518,7 +573,6 @@ var _sharedFontPanel = nil;
             _fontChanges = kSizeChanged;
             [[CPFontManager sharedFontManager] modifyFontViaPanel:self];
         }
-        // TODO:update preview
     }
 }
 
