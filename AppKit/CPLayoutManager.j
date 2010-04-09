@@ -24,27 +24,24 @@
 @import "CPTextContainer.j"
 @import "CPTypesetter.j"
 
+var _sortRange = function(location, anObject)
+{
+    if (CPLocationInRange(location, anObject._range))
+        return CPOrderedSame;
+    else if (CPMaxRange(anObject._range) <= location)
+        return CPOrderedDescending;
+    else
+        return CPOrderedAscending;
+}
+
+#define _indexOfObjectWithLocationInRange(aList, aLocation) [aList indexOfObject:aLocation sortedByFunction:_sortRange context:nil]
 
 var _objectWithLocationInRange = function(aList, aLocation)
 {
-    var i, c = aList.length;
-    for (i = 0; i < c; i++)
-    {
-        if (CPLocationInRange(aLocation, aList[i]._range))
-            return aList[i];
-    }
+    var index = _indexOfObjectWithLocationInRange(aList, aLocation);
+    if (index != CPNotFound)
+        return aList[index];
     return nil;
-}
-
-var _indexOfObjectWithLocationInRange = function(aList, aLocation)
-{
-    var i, c = aList.length;
-    for (i = 0; i < c; i++)
-    {
-        if (CPLocationInRange(aLocation, aList[i]._range))
-            return i;
-    }
-    return CPNotFound;
 }
 
 var _objectsInRange = function(aList, aRange)
@@ -133,6 +130,30 @@ var _objectsInRange = function(aList, aRange)
         }
     }
     return _glyphsFrames;
+}
+- (void)drawInContext:(CGContext)context atPoint:(CPPoint)aPoint forRange:(CPRangePointer /* in and out */)aRange inTextStorage:(CPTextStorage)textStorage 
+{
+    CGContextSaveGState(context);
+    CGContextSetFillColor(context, _textColor);
+    CGContextSetFont(context, _font);
+
+    var start = 0,
+        length =  Math.min(_range.length, aRange.length);
+
+    if (aRange.location < _range.location)
+        start = _range.location;
+    else
+        start = aRange.location;
+
+    var string = [textStorage._string substringWithRange:CPMakeRange(start, length)],
+        frames = [self glyphFramesWithTextStorage:textStorage],
+        currentFrame = frames[start - _range.location];
+
+    CGContextShowTextAtPoint(context, aPoint.x + currentFrame.origin.x, aPoint.y + currentFrame.origin.y + currentFrame.size.height, string, string.length);
+    CGContextRestoreGState(context);
+
+    aRange.location = start;
+    aRange.length = length;
 }
 @end
 
@@ -512,39 +533,20 @@ var _objectsInRange = function(aList, aRange)
         return;
 
     var ctx = [[CPGraphicsContext currentContext] graphicsPort],
-        painted = 0,
+        paintedRange = CPCopyRange(aRange),
         lineFragmentIndex = 0,
-        currentFragment = lineFragments[lineFragmentIndex],
-        frames = [currentFragment glyphFramesWithTextStorage:_textStorage];
-        
-    var string = nil;
-    if (aRange.location < currentFragment._range.location)
-        string = [_textStorage._string substringWithRange:CPMakeRange(currentFragment._range.location, Math.min(currentFragment._range.length, aRange.length))];
-    else
-        string = [_textStorage._string substringWithRange:CPMakeRange(aRange.location, Math.min(currentFragment._range.length, aRange.length))];
+        currentFragment = lineFragments[lineFragmentIndex];
 
-    while (painted != aRange.length)
+    do
     {
-        CGContextSaveGState(ctx);
-        CGContextSetFillColor(ctx, currentFragment._textColor);
-        CGContextSetFont(ctx, currentFragment._font);
-
-        var currentFrame = frames[aRange.location + painted - currentFragment._range.location];
-        
-        CGContextShowTextAtPoint(ctx, aPoint.x + currentFrame.origin.x, aPoint.y + currentFrame.origin.y + currentFrame.size.height, string, string.length);
-        CGContextRestoreGState(ctx);
-
-        painted += string.length;
+        paintedRange.length = aRange.length;
+        [currentFragment drawInContext:ctx atPoint:aPoint forRange:paintedRange inTextStorage:_textStorage];
         lineFragmentIndex++;
         if (lineFragmentIndex < lineFragments.length)
-        {
             currentFragment = lineFragments[lineFragmentIndex];
-            string = [_textStorage._string substringWithRange:CPMakeRange(currentFragment._range.location, Math.min(currentFragment._range.length, aRange.length))];
-            frames = [currentFragment glyphFramesWithTextStorage:_textStorage];
-        }
         else
             break;
-    }
+    } while (CPMaxRange(paintedRange) != CPMaxRange(aRange));
 }
 
 - (unsigned)glyphIndexForPoint:(CPPoint)point inTextContainer:(CPTextContainer)container fractionOfDistanceThroughGlyph:(FloatArray)partialFraction
