@@ -192,7 +192,8 @@ var _objectsInRange = function(aList, aRange)
     CPTypesetter _typesetter;
 
     CPMutableArray _lineFragments;
-    _CPLineFragment _extraLineFragment;
+    id _extraLineFragment;
+    Class _lineFragmentFactory;
 
     CPMutableArray _temporaryAttributes;
     
@@ -207,6 +208,8 @@ var _objectsInRange = function(aList, aRange)
         _lineFragments = [[CPMutableArray alloc] init];
         _typesetter = [CPTypesetter sharedSystemTypesetter];
         _isValidatingLayoutAndGlyphs = NO;
+        
+        _lineFragmentFactory = [_CPLineFragment class];
     }
     return self;
 }
@@ -852,7 +855,7 @@ var _objectsInRange = function(aList, aRange)
 
 - (void)setTextContainer:(CPTextContainer)aTextContainer forGlyphRange:(CPRange)glyphRange
 {
-    var lineFragment = [[_CPLineFragment alloc] initWithRange:glyphRange textContainer:aTextContainer];
+    var lineFragment = [[_lineFragmentFactory alloc] initWithRange:glyphRange textContainer:aTextContainer];
     
     lineFragment._attributes = [_textStorage attributesAtIndex:glyphRange.location effectiveRange:nil];
     lineFragment._font = [self _fontForAttributes:lineFragment._attributes];
@@ -906,7 +909,7 @@ var _objectsInRange = function(aList, aRange)
 {
     if (textContainer)
     {
-        _extraLineFragment = [[_CPLineFragment alloc] initWithRange:CPMakeRange(CPNotFound, 0) textContainer:textContainer];
+        _extraLineFragment = [[_lineFragmentFactory alloc] initWithRange:CPMakeRange(CPNotFound, 0) textContainer:textContainer];
         _extraLineFragment._fragmentRect = CPRectCreateCopy(rect);
         _extraLineFragment._usedRect = CPRectCreateCopy(usedRect);
     }
@@ -1013,5 +1016,10 @@ var _objectsInRange = function(aList, aRange)
 {
     /* FIXME: stub */
     return index;
+}
+
+- (void)setLineFragmentFactory:(Class)lineFragmentFactory
+{
+    _lineFragmentFactory = lineFragmentFactory;
 }
 @end
