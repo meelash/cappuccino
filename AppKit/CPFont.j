@@ -26,6 +26,9 @@ var _CPFonts                    = {},
     _CPSystemFontDescriptor     = nil,
     _CPBoldSystemFontDescriptor = nil;
 
+CPNullGlyph = 0;
+CPControlGlyph = 0x00ffffff;
+
 /*! 
     @ingroup appkit
     @class CPFont
@@ -147,6 +150,19 @@ var _CPFonts                    = {},
 - (CPFontDescriptor)fontDescriptor
 {
     return _fontDescriptor;
+}
+
+- (CPSize)advancementForGlyph:(CPGlyph)glyph
+{
+    var size = CPSizeCreateCopy([self boundingRectForGlyph:glyph]);
+    size.height = 0;
+    return size;
+}
+
+- (void)getAdvancements:(CPSizeArray)advancements forGlyphs:(CPGlyphArray)glyphs count:(unsigned)glyphCount
+{
+    for (var i = 0; i < glyphs.length; i++)
+        advancements.push([self advancementForGlyph:glyphs[i]]);
 }
 
 - (BOOL)isEqual:(id)anObject
