@@ -56,7 +56,7 @@ CPControlGlyph = 0x00ffffff;
 + (CPFont)fontWithName:(CPString)aName size:(float)aSize
 {
     var fontDescriptor = [CPFontDescriptor fontDescriptorWithName:aName size:aSize];
-    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+    return _CPFonts[[fontDescriptor cssString]] || [[self alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -70,7 +70,7 @@ CPControlGlyph = 0x00ffffff;
     var fontDescriptor = aDescriptor;
     if (aSize != 0.0)
         fontDescriptor = [fontDescriptor fontDescriptorWithSize:aSize];
-    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+    return _CPFonts[[fontDescriptor cssString]] || [[self alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -82,7 +82,7 @@ CPControlGlyph = 0x00ffffff;
 + (CPFont)boldFontWithName:(CPString)aName size:(float)aSize
 {
     var fontDescriptor = [[CPFontDescriptor fontDescriptorWithName:aName size:aSize] fontDescriptorWithSymbolicTraits:CPFontBoldTrait];
-    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+    return _CPFonts[[fontDescriptor cssString]] || [[self alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -93,7 +93,7 @@ CPControlGlyph = 0x00ffffff;
 + (CPFont)systemFontOfSize:(CPSize)aSize
 {
     var fontDescriptor = [_CPSystemFontDescriptor fontDescriptorWithSize:aSize];
-    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+    return _CPFonts[[fontDescriptor cssString]] || [[self alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 /*!
@@ -104,7 +104,7 @@ CPControlGlyph = 0x00ffffff;
 + (CPFont)boldSystemFontOfSize:(CPSize)aSize
 {
     var fontDescriptor = [_CPBoldSystemFontDescriptor fontDescriptorWithSize:aSize];
-    return _CPFonts[[fontDescriptor cssString]] || [[CPFont alloc] _initWithFontDescriptor:fontDescriptor];
+    return _CPFonts[[fontDescriptor cssString]] || [[self alloc] _initWithFontDescriptor:fontDescriptor];
 }
 
 - (id)_initWithFontDescriptor:(CPFontDescriptor)fontDescriptor
