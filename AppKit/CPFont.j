@@ -154,7 +154,7 @@ CPControlGlyph = 0x00ffffff;
 
 - (CPSize)advancementForGlyph:(CPGlyph)glyph
 {
-    var size = CPSizeCreateCopy([self boundingRectForGlyph:glyph]);
+    var size = CPSizeCreateCopy([self boundingRectForGlyph:glyph].size);
     size.height = 0;
     return size;
 }
