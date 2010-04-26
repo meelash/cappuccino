@@ -25,7 +25,7 @@
 
 var _sharedFontManager = nil;
 
-@implementation CTFontManager : CPObject
+@implementation CTFontManager : CPFontManager
 {
     CPMutableDictionary _registeredFonts;   /* key font id - value font family */
     CPMutableDictionary _fontMetrics;       /* key font family - value corresponding _CTFontMetrics */
