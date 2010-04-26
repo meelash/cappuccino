@@ -193,8 +193,7 @@ function CTFontGetLeading(/* CTFont */font)
 
 function CTFontGetUnderlinePosition(/* CTFont */font)
 {
-    /* TODO: */ 
-    return 0.0;
+    return [font underlinePosition];
 }
 
 function CTFontCreatePathForGlyph(/* CTFont */font, /* CPGlyph */glyph, /* CGAffineTransform */transform)
