@@ -21,6 +21,7 @@
  */
 
 @import "CPTypesetter.j"
+@import "CPText.j"
 
 var _sharedSimpleTypesetter = nil;
 
@@ -113,7 +114,7 @@ var _sharedSimpleTypesetter = nil;
         var fragmentRect = CPRectCreateCopy(_lineRect);
         fragmentRect.size.width = fragmentWidth;
         [_layoutManager setLineFragmentRect:_lineRect forGlyphRange:fragmentRange usedRect:fragmentRect];
-        [_layoutManager setLocation:_lineRect.origin forStartOfGlyphRange:fragmentRange];
+        [_layoutManager setLocation:CPMakePoint(0, 0) forStartOfGlyphRange:fragmentRange];
     }
     if (isNewline)
     {    

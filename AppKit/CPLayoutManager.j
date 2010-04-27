@@ -120,8 +120,8 @@ var _objectsInRange = function(aList, aRange)
         _glyphsFrames = [];
         var substring = [textStorage._string substringWithRange:_range],
             c = _range.length,
-            origin = CPPointMake(_location.x, _location.y);
-            
+            origin = CPPointMake(_location.x + _fragmentRect.origin.x, _location.y + _fragmentRect.origin.y);
+
         for (var i = 0; i < c; i++)
         {
             var size = [_font boundingRectForGlyph:substring.charAt(i)].size;
@@ -180,7 +180,7 @@ var _objectsInRange = function(aList, aRange)
 }
 @end
 
-/*! 
+/*!
     @ingroup appkit
     @class CPLayoutManager
 */
@@ -828,10 +828,10 @@ var _objectsInRange = function(aList, aRange)
 {
     if ([attributes containsKey:CPFontAttributeName])
         return [attributes objectForKey:CPFontAttributeName];
-        
+
     if ([_textStorage font])
         return [_textStorage font];
-        
+
     return [CPFont systemFontWithSize:12.0];
 }
 
@@ -839,7 +839,7 @@ var _objectsInRange = function(aList, aRange)
 {
     if ([attributes containsKey:CPForegroundColorAttributeName])
         return [attributes objectForKey:CPForegroundColorAttributeName];
-        
+
     if ([_textStorage foregroundColor])
         return [_textStorage foregroundColor];
 
@@ -856,7 +856,7 @@ var _objectsInRange = function(aList, aRange)
 - (void)setTextContainer:(CPTextContainer)aTextContainer forGlyphRange:(CPRange)glyphRange
 {
     var lineFragment = [[_lineFragmentFactory alloc] initWithRange:glyphRange textContainer:aTextContainer];
-    
+
     lineFragment._attributes = [_textStorage attributesAtIndex:glyphRange.location effectiveRange:nil];
     lineFragment._font = [self _fontForAttributes:lineFragment._attributes];
     lineFragment._textColor = [self _textColorForAttributes:lineFragment._attributes];
