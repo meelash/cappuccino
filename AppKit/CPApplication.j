@@ -118,7 +118,7 @@ CPRunContinuesResponse  = -1002;
 + (CPApplication)sharedApplication
 {
     if (!CPApp)
-        CPApp = [[CPApplication alloc] init];
+        CPApp = [[self alloc] init];
     
     return CPApp;
 }
