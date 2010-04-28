@@ -391,6 +391,91 @@ function CGPathIsEmpty(aPath)
     return !aPath || aPath.count == 0;
 }
 
+
+#define _BBoxAddPoint(b, x_, y_) \
+    if (!b)\
+        b = _CGRectMake(x_, y_, 0, 0);\
+    else {\
+        if (x_ > _CGRectGetMaxX(b))\
+            b.size.width = x_ - _CGRectGetMinX(b);\
+        else if (x_ < b.origin.x)\
+        { \
+            b.size.width = _CGRectGetMaxX(b) - x_;\
+            b.origin.x = x_;\
+        }\
+        if (y_ > _CGRectGetMaxY(b))\
+            b.size.height = y_ - _CGRectGetMinY(b);\
+        else if (y_ < b.origin.y)\
+        { \
+            b.size.height = _CGRectGetMaxY(b) - y_;\
+            b.origin.y = y_;\
+        }\
+    }
+
+function CGPathGetBoundingBox(aPath)
+{
+    if (!aPath.count)
+        return _CGRectMake(0,0,0,0);
+
+    var bbox = nil,
+        c = aPath.count;
+    for (var i = 0; i < c; i++)
+    {
+        var element = aPath.elements[i];
+        switch (element.type)
+        {
+            case kCGPathElementMoveToPoint:
+            case kCGPathElementAddLineToPoint:
+                _BBoxAddPoint(bbox, element.x, element.y);
+                break;
+
+            case kCGPathElementAddCurveToPoint:
+                _BBoxAddPoint(bbox, element.x, element.y);
+                _BBoxAddPoint(bbox, element.cp1x, element.cp1y);
+                _BBoxAddPoint(bbox, element.cp2y, element.cp2y);
+                break;
+
+            case kCGPathElementAddQuadCurveToPoint:
+                _BBoxAddPoint(bbox, element.x, element.y);
+                _BBoxAddPoint(bbox, element.cpx, element.cpy);
+                break;
+                
+            case kCGPathElementAddArc:
+            {
+                var step = Math.PI / 2.0,
+                    start = element.startAngle,
+                    end = element.endAngle,
+                    point;
+
+                if (start <= 0)
+                    start += 2 * Math.PI;
+                if (end <= 0)
+                    end += 2 * Math.PI;
+
+                if (end < start)
+                {
+                    var tmp = start;
+                    start = end;
+                    end = tmp;
+                }
+
+                for (; start < end; start += step)
+                {
+                    point = CGPointMake(COS(start) * element.radius, SIN(start) * element.radius);
+                    point.x += element.x;
+                    point.y += element.y;
+                    _BBoxAddPoint(bbox, point.x, point.y);
+                }
+                point = CGPointMake(COS(end) * element.radius, SIN(end) * element.radius);
+                point.x += element.x;
+                point.y += element.y;
+                _BBoxAddPoint(bbox, point.x, point.y);
+            } break;
+        }
+    }
+    return bbox;
+}
+
 /*!
     @}
 */
