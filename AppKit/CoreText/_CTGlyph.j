@@ -158,6 +158,22 @@ var _CTParseValues = function(cmd)
                     }
                     break;
 
+                case 'l':
+                    values = _CTParseValues(commands[i][0]);
+                    if (values.length < 2)
+                        [CPException raise:@"CoreText Exception" reason:@"-[_CTGlyph path] incorrect data"];
+
+                    for (var j = 0; j < values.length; j += 2)
+                    {
+                        x = parseFloat(values[0][0]) + lastPoint.x;
+                        y = parseFloat(values[1][0]) + lastPoint.y;
+                        lastPoint.x = x;
+                        lastPoint.y = y;
+
+                        CGPathAddLineToPoint(_path, NULL, x, y);
+                    }
+                    break;
+
                 case 'H':
                 case 'V':
                     values = _CTParseValues(commands[i][0]);
@@ -178,6 +194,26 @@ var _CTParseValues = function(cmd)
                     }
                     break;
 
+                case 'h':
+                case 'v':
+                    values = _CTParseValues(commands[i][0]);
+                    if (values.length < 1)
+                        [CPException raise:@"CoreText Exception" reason:@"-[_CTGlyph path] incorrect data"];
+
+                    x = parseFloat(values[0][0]);
+
+                    if (cmd == 'h')
+                    {
+                        CGPathAddLineToPoint(_path, NULL, x + lastPoint.x, lastPoint.y);
+                        lastPoint.x = x + lastPoint.x;
+                    }
+                    else
+                    {
+                        CGPathAddLineToPoint(_path, NULL, lastPoint.x, x + lastPoint.y);
+                        lastPoint.y = x + lastPoint.y;
+                    }
+                    break;
+
                 case 'Q':
                     values = _CTParseValues(commands[i][0]);
                     if (values.length < 4)
@@ -190,6 +226,28 @@ var _CTParseValues = function(cmd)
 
                         x = parseFloat(values[2][0]);
                         y = parseFloat(values[3][0]);
+
+                        lastPoint.x = x;
+                        lastPoint.y = y;
+                        lastControlPoint.x = cx;
+                        lastControlPoint.y = cy;
+
+                        CGPathAddQuadCurveToPoint(_path, NULL, cx, cy, x, y);
+                    }
+                    break;
+
+                case 'q':
+                    values = _CTParseValues(commands[i][0]);
+                    if (values.length < 4)
+                        [CPException raise:@"CoreText Exception" reason:@"-[_CTGlyph path] incorrect data"];
+
+                    for (var j = 0; j < values.length; j += 4)
+                    {
+                        cx = parseFloat(values[0][0]) + lastPoint.x;
+                        cy = parseFloat(values[1][0]) + lastPoint.y;
+
+                        x = parseFloat(values[2][0]) + lastPoint.x;
+                        y = parseFloat(values[3][0]) + lastPoint.y;
 
                         lastPoint.x = x;
                         lastPoint.y = y;
@@ -227,6 +285,34 @@ var _CTParseValues = function(cmd)
                         }
                     }
                     break;    
+
+                case 't':
+                    values = _CTParseValues(commands[i][0]);
+                    if (values.length < 2)
+                        [CPException raise:@"CoreText Exception" reason:@"-[_CTGlyph path] incorrect data"];
+
+                    for (var j = 0; j < values.length; j += 2)
+                    {
+                        x = parseFloat(values[0][0]) + lastPoint.x;
+                        y = parseFloat(values[1][0]) + lastPoint.y;
+
+                        if (lastCmd && (lastCmd === 'q' || lastCmd === 't'))
+                        {
+                            lastPoint.x = x;
+                            lastPoint.y = y;
+
+                            CGPathAddQuadCurveToPoint(_path, NULL, lastControlPoint.x, lastControlPoint.y, x, y);
+                        }
+                        else
+                        {                        
+                            CGPathAddQuadCurveToPoint(_path, NULL, x, y, x, y);
+                            lastPoint.x = x;
+                            lastPoint.y = y;
+                            lastControlPoint.x = x;
+                            lastControlPoint.y = y;
+                        }
+                    }
+                    break; 
 
                 case 'z':
                 case 'Z':
