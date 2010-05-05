@@ -389,13 +389,28 @@ var _objectsInRange = function(aList, aRange)
         }
     }
     var fragment = _lineFragments[firstFragmentIndex],
-        range = CPCopyRange(fragment._range);
+        range = CPCopyRange(fragment._range),
+        y = fragment._fragmentRect.origin.y,
+        lineHeight = fragment._fragmentRect.size.height;
+
     fragment._isInvalid = YES;
     
-    /* FIXME: invalidate all the fragments on the same line */
-    
+    var i = firstFragmentIndex - 1;
+    while (i >= 0)
+    {
+        fragment = _lineFragments[i];
+        if (fragment._fragmentRect.origin.y === y && fragment._fragmentRect.size.height === lineHeight)
+        {
+            fragment._isInvalid = YES;
+            range = CPUnionRange(range, fragment._range)
+        }
+        else
+            break;
+        i--;
+    }
+
     /* invalidated all fragments that follows */
-    for (var i = firstFragmentIndex + 1; i < _lineFragments.length; i++)
+    for (i = firstFragmentIndex + 1; i < _lineFragments.length; i++)
     {
         _lineFragments[i]._isInvalid = YES;
         range = CPUnionRange(range, _lineFragments[i]._range);
@@ -750,14 +765,14 @@ var _objectsInRange = function(aList, aRange)
             {
                 var splittedAttribute = [[_CPTemporaryAttributes alloc] initWithRange:CPMakeRange(location, CPMaxRange(tempAttributes._range) - location)
                                          attributes:[tempAttributes._attributes copy]];
-                
+
                 if ([_temporaryAttributes count] == tempAttributesIndex+1)
                     [_temporaryAttributes addObject:splittedAttribute];
                 else
                     [_temporaryAttributes insertObject:splittedAttribute atIndex:tempAttributesIndex + 1];
-                
+
                 tempAttributes._range = CPMakeRange(tempAttributes._range.location, location - tempAttributes._range.location);
-                
+
                 dirtyRange = (dirtyRange)?CPUnionRange(dirtyRange, tempAttributes._range):CPCopyRange(tempAttributes._range);
                 dirtyRange = CPUnionRange(dirtyRange, splittedAttribute._range);
 
@@ -779,7 +794,7 @@ var _objectsInRange = function(aList, aRange)
                         [_temporaryAttributes addObject:nextAttribute];
                     else
                         [_temporaryAttributes insertObject:nextAttribute atIndex:insertIndex + 1];
-                    
+
                     length = charRange.length;
                 }
 
