@@ -459,10 +459,14 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 {
     if (_isSelectable)
     {
+        if (_carretTimer)
+        {
+            [_carretTimer invalidate];
+            _carretTimer = nil;
+        }
         [self setSelectedRange:CPMakeRange(0, [_textStorage length])];
-        [self setNeedsDisplay:YES];
     }
-}   
+}
 
 - (void)deleteBackward:(id)sender
 {
