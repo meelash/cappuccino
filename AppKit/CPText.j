@@ -138,6 +138,14 @@ CPDeleteCharacter             = 0x007f;
 {
     CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
 }
+- (void)setMaxSize:(CPSize)aSize
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+}
+- (void)setMinSize:(CPSize)aSize
+{
+    CPLog.error(@"-[CPText "+_cmd+"] subclass responsibility");
+}
 - (void)setString:(CPString)aString
 {
     [self replaceCharactersInRange:CPMakeRange(0, [[self string] length]) withString:aString];

@@ -741,6 +741,16 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     return _minSize;
 }
 
+- (void)setMaxSize:(CPSize)aSize
+{
+    _maxSize = aSize;
+}
+
+- (void)setMinSize:(CPSize)aSize
+{
+    _minSize = aSize;
+}
+
 - (void)sizeToFit
 {
     var size = [self bounds].size,
@@ -760,13 +770,16 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)setConstrainedFrameSize:(CPSize)desiredSize
 {
-    var boundsSize = [self bounds].size;
+    var boundsSize = [self bounds].size,
+        minSize = [self minSize],
+        maxSize = [self maxSize];
+
     if (_isHorizontallyResizable)
     {
-        if (desiredSize.width < _minSize.width)
-            desiredSize.width = _minSize.width;
-        else if (desiredSize.width > _maxSize.width)
-            desiredSize.width = _maxSize.width;
+        if (desiredSize.width < minSize.width)
+            desiredSize.width = minSize.width;
+        else if (desiredSize.width > maxSize.width)
+            desiredSize.width = maxSize.width;
     }
     else
     {
@@ -774,10 +787,10 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     }
     if (_isVerticallyResizable)
     {
-        if (desiredSize.height < _minSize.height)
-            desiredSize.height = _minSize.height;
-        else if (desiredSize.height > _maxSize.height)
-            desiredSize.height = _maxSize.height;
+        if (desiredSize.height < minSize.height)
+            desiredSize.height = minSize.height;
+        else if (desiredSize.height > maxSize.height)
+            desiredSize.height = maxSize.height;
     }
     else
     {
