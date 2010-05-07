@@ -120,9 +120,9 @@ var _CTParseValues = function(cmd)
         var lastCmd,
             lastPoint = CPMakePoint(0,0),
             lastControlPoint = CPMakePoint(0,0),
-            x, y, cx, cy;
+            x, y, cx, cy,
+            firstPoint = YES;
 
-        /* FIXME: any relative coordinates possible in a glyph path ?? */
         for (var i = 0; i < commands.length; i++)
         {
             cmd = commands[i][0][0];
@@ -136,6 +136,27 @@ var _CTParseValues = function(cmd)
                     /* FIXME: multiple pairs of coordinates -> LineTo */
                     x = parseFloat(values[0][0]);
                     y = parseFloat(values[1][0]);
+                    lastPoint.x = x;
+                    lastPoint.y = y;
+                    firstPoint = NO;
+
+                    CGPathMoveToPoint(_path, NULL, x, y);
+                    break;
+
+                case 'm':
+                    values = _CTParseValues(commands[i][0]);
+                    if (values.length < 2)
+                        [CPException raise:@"CoreText Exception" reason:@"-[_CTGlyph path] incorrect data"];
+                    /* FIXME: multiple pairs of coordinates -> LineTo */
+                    x = parseFloat(values[0][0]);
+                    y = parseFloat(values[1][0]);
+                    if (!firstPoint)
+                    {
+                        x += lastPoint.x;
+                        y += lastPoint.y;
+                    }
+                    firstPoint = NO;
+
                     lastPoint.x = x;
                     lastPoint.y = y;
 
