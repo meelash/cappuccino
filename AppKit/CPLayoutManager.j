@@ -81,7 +81,9 @@ var _objectsInRange = function(aList, aRange)
     CPRange _range;
     CPTextContainer _textContainer;
     BOOL _isInvalid;
-        
+    
+    CPMutableArray _runs;
+    
     /* attributes caching */
     CPDictionary _attributes;
     CPFont _font;
@@ -91,7 +93,7 @@ var _objectsInRange = function(aList, aRange)
     /* 'Glyphs' frames */
     CPArray _glyphsFrames;
 }
-- (id) initWithRange:(CPRange)aRange textContainer:(CPTextContainer)aContainer
+- (id) initWithRange:(CPRange)aRange textContainer:(CPTextContainer)aContainer textStorage:(CPTextStorage)textStorage
 {
     self = [super init];
     if (self)
@@ -102,6 +104,43 @@ var _objectsInRange = function(aList, aRange)
         _range = CPCopyRange(aRange);
         _textContainer = aContainer;
         _isInvalid = NO;
+        
+        _runs = [];
+        var effectiveRange = CPMakeRange(0,0),
+            location = aRange.location;
+
+        do {
+            var attributes = [textStorage attributesAtIndex:location effectiveRange:effectiveRange];
+            if (CPMaxRange(effectiveRange) > CPMaxRange(aRange))
+                effectiveRange = CPIntersectionRange(effectiveRange, aRange);
+
+            var run = { _range:CPCopyRange(effectiveRange), string:[textStorage._string substringWithRange:effectiveRange] };
+
+            if ([attributes containsKey:CPForegroundColorAttributeName])
+                run.textColor = [attributes objectForKey:CPForegroundColorAttributeName];
+            else if ([textStorage foregroundColor])
+                run.textColor = [textStorage foregroundColor];
+            else
+                run.textColor = [CPColor blackColor];
+                
+            if ([attributes containsKey:CPFontAttributeName])
+                run.font = [attributes objectForKey:CPFontAttributeName];
+            else if ([textStorage font])
+                run.font = [textStorage font];
+            else run.font = [CPFont systemFontWithSize:12.0];
+            
+            if ([attributes containsKey:CPBackgroundColorAttributeName])
+                run.backgroundColor = [attributes objectForKey:CPBackgroundColorAttributeName];
+            else
+                run.backgroundColor = [CPColor clearColor];
+
+            run.advancements = [];
+            [run.font getAdvancements:run.advancements forGlyphs:run.string count:run.string.length];
+
+            _runs.push(run);
+
+            location = CPMaxRange(effectiveRange);
+        } while (location < CPMaxRange(aRange));
     }
     return self;
 }
@@ -113,47 +152,79 @@ var _objectsInRange = function(aList, aRange)
         "\n\t_location="+CPStringFromPoint(_location) +
         "\n\t_range="+CPStringFromRange(_range);
 }
-- (CPArray)glyphFramesWithTextStorage:(CPTextStorage)textStorage
+- (CPArray)glyphFrames
 {
     if (!_glyphsFrames)
     {
         _glyphsFrames = [];
-        var substring = [textStorage._string substringWithRange:_range],
-            c = _range.length,
+        var runsCount = _runs.length,
             origin = CPPointMake(_location.x + _fragmentRect.origin.x, _location.y + _fragmentRect.origin.y);
 
-        for (var i = 0; i < c; i++)
+        for (var i = 0; i < runsCount; i++)
         {
-            var size = [_font boundingRectForGlyph:substring.charAt(i)].size;
-            _glyphsFrames.push(CPRectMake(origin.x, origin.y, size.width, _usedRect.size.height));
-            origin.x += size.width;
+            var run = _runs[i];
+            var j, c = run.string.length;
+            for (j = 0; j < c; j++)
+            {
+                var size = [run.font boundingRectForGlyph:run.string.charAt(j)].size;
+                _glyphsFrames.push(CPRectMake(origin.x, origin.y, size.width, _usedRect.size.height));
+                origin.x += size.width;
+            }
         }
     }
     return _glyphsFrames;
 }
-- (void)drawInContext:(CGContext)context atPoint:(CPPoint)aPoint forRange:(CPRangePointer /* in and out */)aRange inTextStorage:(CPTextStorage)textStorage 
+- (void)drawInContext:(CGContext)context atPoint:(CPPoint)aPoint forRange:(CPRangePointer /* in and out */)aRange
 {
-    CGContextSaveGState(context);
-    CGContextSetFillColor(context, _textColor);
-    CGContextSetFont(context, _font);
+    var runs = _objectsInRange(_runs, aRange),
+        c = runs.length,
+        rangeLength = 0,
+        rangeStart = CPNotFound,
+        start = 0,
+        orig = CPPointMake(_location.x + _fragmentRect.origin.x, _location.y + _fragmentRect.origin.y);
+    orig.x += aPoint.x;
+    orig.y += aPoint.y;
 
-    var start = 0,
-        length =  Math.min(_range.length, aRange.length);
+    for (var i = 0; i < c; i++)
+    {
+        var run = runs[i];
+        var length = Math.min(run._range.length, aRange.length);
+        rangeLength += length;
 
-    if (aRange.location < _range.location)
-        start = _range.location;
-    else
-        start = aRange.location;
+        if (aRange.location < run._range.location)
+            start = run._range.location;
+        else
+            start = aRange.location;
 
-    var string = [textStorage._string substringWithRange:CPMakeRange(start, length)],
-        frames = [self glyphFramesWithTextStorage:textStorage],
-        currentFrame = frames[start - _range.location];
+        if (rangeStart == CPNotFound)
+            rangeStart = start;
 
-    CGContextShowTextAtPoint(context, aPoint.x + currentFrame.origin.x, aPoint.y + currentFrame.origin.y + currentFrame.size.height, string, string.length);
-    CGContextRestoreGState(context);
+        var loc = start - run._range.location,
+            string = [run.string substringWithRange:CPMakeRange(loc, length)];
 
-    aRange.location = start;
-    aRange.length = length;
+        for (var j = 0; j < loc; j++)
+            orig.x += run.advancements[j].width;
+
+        CGContextSaveGState(context);
+        CGContextSetFillColor(context, run.textColor);
+        CGContextSetFont(context, run.font);
+
+        CGContextShowTextAtPoint(context, orig.x, orig.y + _fragmentRect.size.height, string, string.length);
+        CGContextRestoreGState(context);
+        
+        for (var j = loc; j < run.advancements.length; j++)
+            orig.x += run.advancements[j].width;
+    }
+    aRange.location = rangeStart;
+    aRange.length = rangeLength;
+}
+
+- (void)backgroundColorForGlyphAtIndex:(unsigned)index
+{
+    var run = _objectWithLocationInRange(_runs, index);
+    if (run)
+        return run.backgroundColor;
+    return [CPColor clearColor];
 }
 @end
 
@@ -284,7 +355,7 @@ var _objectsInRange = function(aList, aRange)
         var fragment = fragments[i];
         if (fragment._textContainer === container)
         {
-            var frames = [fragment glyphFramesWithTextStorage:_textStorage];
+            var frames = [fragment glyphFrames];
             for (var j = 0; j < frames.length; j++)
             {
                 if (CPLocationInRange(fragment._range.location + j, aRange))
@@ -357,7 +428,7 @@ var _objectsInRange = function(aList, aRange)
     if (removeRange.length)    
         [_lineFragments removeObjectsInRange:removeRange];
 
-    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:0 nextGlyphIndex:nil];
+    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:3 nextGlyphIndex:nil];
     
     _isValidatingLayoutAndGlyphs = NO;
 }
@@ -394,20 +465,6 @@ var _objectsInRange = function(aList, aRange)
         lineHeight = fragment._fragmentRect.size.height;
 
     fragment._isInvalid = YES;
-    
-    var i = firstFragmentIndex - 1;
-    while (i >= 0)
-    {
-        fragment = _lineFragments[i];
-        if (fragment._fragmentRect.origin.y === y && fragment._fragmentRect.size.height === lineHeight)
-        {
-            fragment._isInvalid = YES;
-            range = CPUnionRange(range, fragment._range)
-        }
-        else
-            break;
-        i--;
-    }
 
     /* invalidated all fragments that follows */
     for (i = firstFragmentIndex + 1; i < _lineFragments.length; i++)
@@ -454,7 +511,7 @@ var _objectsInRange = function(aList, aRange)
             else
             {
                 var glyphRange = CPMakeRange(CPNotFound,0),
-                frames = [fragment glyphFramesWithTextStorage:_textStorage];
+                frames = [fragment glyphFrames];
                 
                 for (var j = 0; j < frames.length; j++)
                 {
@@ -482,6 +539,7 @@ var _objectsInRange = function(aList, aRange)
 - (void)drawBackgroundForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
     [self _validateLayoutAndGlyphs];
+
     var lineFragments = _objectsInRange(_lineFragments, aRange);
     if (!lineFragments.length)
         return;
@@ -490,7 +548,7 @@ var _objectsInRange = function(aList, aRange)
         painted = 0,
         lineFragmentIndex = 0,
         currentFragment = lineFragments[lineFragmentIndex],
-        frames = [currentFragment glyphFramesWithTextStorage:_textStorage],
+        frames = [currentFragment glyphFrames],
         framesToPaint = Math.min(currentFragment._range.length, aRange.length),
         tempRange = CPMakeRange(0,0);
 
@@ -520,8 +578,8 @@ var _objectsInRange = function(aList, aRange)
                 }
             }
             if (!colorSetByTemporary)
-                CGContextSetFillColor(ctx, currentFragment._backgroundColor);
-        
+                CGContextSetFillColor(ctx, [currentFragment backgroundColorForGlyphAtIndex:i]);
+
             CGContextFillRect(ctx, CPRectMake(aPoint.x + frames[i].origin.x, aPoint.y + frames[i].origin.y, 
                                     frames[i].size.width, frames[i].size.height));
         }
@@ -532,7 +590,7 @@ var _objectsInRange = function(aList, aRange)
         if (lineFragmentIndex < lineFragments.length)
         {
             currentFragment = lineFragments[lineFragmentIndex];
-            frames = [currentFragment glyphFramesWithTextStorage:_textStorage];
+            frames = [currentFragment glyphFrames];
             framesToPaint = Math.min(currentFragment._range.length, aRange.length);
        }
         else
@@ -558,7 +616,7 @@ var _objectsInRange = function(aList, aRange)
     do
     {
         paintedRange.length = aRange.length;
-        [currentFragment drawInContext:ctx atPoint:aPoint forRange:paintedRange inTextStorage:_textStorage];
+        [currentFragment drawInContext:ctx atPoint:aPoint forRange:paintedRange];
         lineFragmentIndex++;
         if (lineFragmentIndex < lineFragments.length)
             currentFragment = lineFragments[lineFragmentIndex];
@@ -577,7 +635,7 @@ var _objectsInRange = function(aList, aRange)
         var fragment = _lineFragments[i];
         if (fragment._textContainer === container)
         {
-            var frames = [fragment glyphFramesWithTextStorage:_textStorage];
+            var frames = [fragment glyphFrames];
             for (var j = 0; j < frames.length; j++)
             {
                 if (CPRectContainsPoint(frames[j], point))
@@ -870,13 +928,7 @@ var _objectsInRange = function(aList, aRange)
 
 - (void)setTextContainer:(CPTextContainer)aTextContainer forGlyphRange:(CPRange)glyphRange
 {
-    var lineFragment = [[_lineFragmentFactory alloc] initWithRange:glyphRange textContainer:aTextContainer];
-
-    lineFragment._attributes = [_textStorage attributesAtIndex:glyphRange.location effectiveRange:nil];
-    lineFragment._font = [self _fontForAttributes:lineFragment._attributes];
-    lineFragment._textColor = [self _textColorForAttributes:lineFragment._attributes];
-    lineFragment._backgroundColor = [self _backgroundColorForAttributes:lineFragment._attributes];
-
+    var lineFragment = [[_lineFragmentFactory alloc] initWithRange:glyphRange textContainer:aTextContainer textStorage:_textStorage];
     _lineFragments.push(lineFragment);
 }
 
@@ -924,11 +976,12 @@ var _objectsInRange = function(aList, aRange)
 {
     if (textContainer)
     {
-        _extraLineFragment = [[_lineFragmentFactory alloc] initWithRange:CPMakeRange(CPNotFound, 0) textContainer:textContainer];
+        _extraLineFragment = {};
         _extraLineFragment._fragmentRect = CPRectCreateCopy(rect);
         _extraLineFragment._usedRect = CPRectCreateCopy(usedRect);
+        _extraLineFragment._textContainer = textContainer;
     }
-    else 
+    else
         _extraLineFragment = nil;
 }
 
@@ -992,7 +1045,7 @@ var _objectsInRange = function(aList, aRange)
         if (index == lineFragment._range.location)
             return CPPointCreateCopy(lineFragment._location);
             
-        var glyphFrames = [lineFragment glyphFramesWithTextStorage:_textStorage];
+        var glyphFrames = [lineFragment glyphFrames];
         return CPPointCreateCopy(glyphFrames[index - lineFragment._range.location].origin);
     }
     return CPPointMakeZero();
