@@ -152,6 +152,21 @@ CPControlGlyph = 0x00ffffff;
     return _fontDescriptor;
 }
 
+- (float)ascender
+{
+    return [_fontDescriptor pointSize] * 0.9; /* FIXME: Fake value rather correct for Arial (normal) */
+}
+
+- (float)descender
+{
+    return [_fontDescriptor pointSize] * -0.2; /* FIXME: Fake value rather correct for Arial (normal) */
+}
+
+- (float)leading
+{
+    return ([self ascender] - [self descender]) * 0.2;  /* FIXME: */
+}
+
 - (CPSize)advancementForGlyph:(CPGlyph)glyph
 {
     var size = CPSizeCreateCopy([self boundingRectForGlyph:glyph].size);
