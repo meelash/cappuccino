@@ -158,7 +158,7 @@ var _objectsInRange = function(aList, aRange)
     {
         _glyphsFrames = [];
         var runsCount = _runs.length,
-            origin = CPPointMake(_location.x + _fragmentRect.origin.x, _location.y + _fragmentRect.origin.y);
+            origin = CPPointMake(_fragmentRect.origin.x, _fragmentRect.origin.y);
 
         for (var i = 0; i < runsCount; i++)
         {
@@ -209,9 +209,9 @@ var _objectsInRange = function(aList, aRange)
         CGContextSetFillColor(context, run.textColor);
         CGContextSetFont(context, run.font);
 
-        CGContextShowTextAtPoint(context, orig.x, orig.y + _fragmentRect.size.height, string, string.length);
+        CGContextShowTextAtPoint(context, orig.x, orig.y, string, string.length);
         CGContextRestoreGState(context);
-        
+
         for (var j = loc; j < run.advancements.length; j++)
             orig.x += run.advancements[j].width;
     }
@@ -895,35 +895,6 @@ var _objectsInRange = function(aList, aRange)
 - (void)setTypesetter:(CPTypesetter)aTypesetter
 {
     _typesetter = aTypesetter;
-}
-
-- (CPFont)_fontForAttributes:(CPDictionary)attributes
-{
-    if ([attributes containsKey:CPFontAttributeName])
-        return [attributes objectForKey:CPFontAttributeName];
-
-    if ([_textStorage font])
-        return [_textStorage font];
-
-    return [CPFont systemFontWithSize:12.0];
-}
-
-- (CPColor)_textColorForAttributes:(CPDictionary)attributes
-{
-    if ([attributes containsKey:CPForegroundColorAttributeName])
-        return [attributes objectForKey:CPForegroundColorAttributeName];
-
-    if ([_textStorage foregroundColor])
-        return [_textStorage foregroundColor];
-
-    return [CPColor blackColor];
-}
-
-- (CPColor)_backgroundColorForAttributes:(CPDictionary)attributes
-{
-    if ([attributes containsKey:CPBackgroundColorAttributeName])
-        return [attributes objectForKey:CPBackgroundColorAttributeName];
-    return [CPColor clearColor];
 }
 
 - (void)setTextContainer:(CPTextContainer)aTextContainer forGlyphRange:(CPRange)glyphRange
