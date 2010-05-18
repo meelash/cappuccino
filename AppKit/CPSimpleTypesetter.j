@@ -79,7 +79,8 @@ var _sharedSimpleTypesetter = nil;
         lineWidth = 0,
         theString = [_textStorage string],
         lineOrigin,
-        lineRect;
+        lineRect,
+        ascent, descent;
 
     lineRect = [_layoutManager extraLineFragmentRect];
     if (glyphIndex > 0 && CPRectIsEmpty(lineRect))
@@ -94,12 +95,14 @@ var _sharedSimpleTypesetter = nil;
             _currentFont = [_currentAttributes objectForKey:CPFontAttributeName];
             if (!_currentFont)
                 _currentFont = [_textStorage font];
+                
+            ascent = [_currentFont ascender];
+            descent = [_currentFont descender];
+            leading = (ascent - descent) * 0.2; // FAKE leading
         }
+        var currentChar = [theString characterAtIndex:glyphIndex],
+            glyphBound = [_currentFont boundingRectForGlyph:currentChar];
 
-        var exitFragment = NO,
-            currentChar = [theString characterAtIndex:glyphIndex],
-            glyphBound = [_currentFont boundingRectForGlyph:currentChar],
-            leading = glyphBound.size.height * 0.2; // FAKE leading
         lineRange.length++;
 
         if (currentChar == ' ')
@@ -122,9 +125,9 @@ var _sharedSimpleTypesetter = nil;
             isNewline = YES;
             isWordWrapped = YES;
         }
-        _lineHeight = Math.max(_lineHeight, glyphBound.size.height + leading);
+        _lineHeight = Math.max(_lineHeight, ascent - descent + leading);
         lineWidth += glyphBound.size.width;
-        
+        _lineBase =  Math.max(_lineBase, ascent);
         if (isNewline)
         {
             [_layoutManager setTextContainer:_currentTextContainer forGlyphRange:lineRange];
@@ -132,12 +135,13 @@ var _sharedSimpleTypesetter = nil;
             var rect = CPRectMake(lineOrigin.x, lineOrigin.y, lineWidth, _lineHeight);
             // FIXME: handle line fragment padding
             [_layoutManager setLineFragmentRect:rect forGlyphRange:lineRange usedRect:rect];
-            [_layoutManager setLocation:CPMakePoint(0, 0) forStartOfGlyphRange:lineRange];
+            [_layoutManager setLocation:CPMakePoint(0, _lineBase) forStartOfGlyphRange:lineRange];
 
             lineOrigin.x = 0;
             lineOrigin.y += _lineHeight;
             _lineHeight = 0;
             lineWidth = 0;
+            _lineBase = 0;
             numLines++;
 
             if (!isWordWrapped)
@@ -153,7 +157,7 @@ var _sharedSimpleTypesetter = nil;
         }
         glyphIndex++;
     } while (numLines != maxNumLines && glyphIndex != [_textStorage length]);
-    
+
     if (lineRange.length)
     {
         [_layoutManager setTextContainer:_currentTextContainer forGlyphRange:lineRange];
@@ -161,7 +165,7 @@ var _sharedSimpleTypesetter = nil;
         var rect = CPRectMake(lineOrigin.x, lineOrigin.y, lineWidth, _lineHeight);
         // FIXME: handle line fragment padding
         [_layoutManager setLineFragmentRect:rect forGlyphRange:lineRange usedRect:rect];
-        [_layoutManager setLocation:CPMakePoint(0, 0) forStartOfGlyphRange:lineRange];
+        [_layoutManager setLocation:CPMakePoint(0, _lineBase) forStartOfGlyphRange:lineRange];
     }
 }
 @end
