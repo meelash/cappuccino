@@ -113,6 +113,8 @@ var _objectsInRange = function(aList, aRange)
             var attributes = [textStorage attributesAtIndex:location effectiveRange:effectiveRange];
             if (CPMaxRange(effectiveRange) > CPMaxRange(aRange))
                 effectiveRange = CPIntersectionRange(effectiveRange, aRange);
+            if (effectiveRange.location < location)
+                effectiveRange.location = location;
 
             var run = { _range:CPCopyRange(effectiveRange), string:[textStorage._string substringWithRange:effectiveRange] };
 
