@@ -87,6 +87,9 @@ var _sharedSimpleTypesetter = nil;
         lineRect = [_layoutManager lineFragmentRectForGlyphAtIndex:glyphIndex - 1 effectiveRange:nil];
 
     lineOrigin = lineRect.origin;
+    [_layoutManager setExtraLineFragmentRect:CPRectMake(0,0) usedRect:CPRectMake(0,0) textContainer:nil];
+    if (![_textStorage length])
+        return;
 
     do {
         if (!CPLocationInRange(glyphIndex, _attributesRange))
