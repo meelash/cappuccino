@@ -84,12 +84,6 @@ var _objectsInRange = function(aList, aRange)
     
     CPMutableArray _runs;
     
-    /* attributes caching */
-    CPDictionary _attributes;
-    CPFont _font;
-    CPColor _textColor;
-    CPColor _backgroundColor;
-    
     /* 'Glyphs' frames */
     CPArray _glyphsFrames;
 }
@@ -210,9 +204,6 @@ var _objectsInRange = function(aList, aRange)
         CGContextSaveGState(context);
         CGContextSetFillColor(context, run.textColor);
         CGContextSetFont(context, run.font);
-
-        CPLog.trace(_cmd+" paint run '"+string+"' range "+CPStringFromRange(run._range)+" at "+CPStringFromPoint(orig));
-
         CGContextShowTextAtPoint(context, orig.x, orig.y, string, string.length);
         CGContextRestoreGState(context);
 
