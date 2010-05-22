@@ -79,17 +79,19 @@ var _sharedSimpleTypesetter = nil;
         lineWidth = 0,
         theString = [_textStorage string],
         lineOrigin,
-        lineRect,
         ascent, descent;
 
-    lineRect = [_layoutManager extraLineFragmentRect];
-    if (glyphIndex > 0 && CPRectIsEmpty(lineRect))
-        lineRect = [_layoutManager lineFragmentRectForGlyphAtIndex:glyphIndex - 1 effectiveRange:nil];
+    if ([_layoutManager extraLineFragmentTextContainer])
+        lineOrigin = CPPointMake(0, [_layoutManager extraLineFragmentUsedRect].origin.y);
+    /*else if (glyphIndex > 0)
+        lineOrigin = CPPointCreateCopy([_layoutManager lineFragmentRectForGlyphAtIndex:glyphIndex effectiveRange:nil].origin);*/
+    else
+        lineOrigin = CPPointMake(0,0);
 
-    lineOrigin = lineRect.origin;
-    [_layoutManager setExtraLineFragmentRect:CPRectMake(0,0) usedRect:CPRectMake(0,0) textContainer:nil];
     if (![_textStorage length])
         return;
+
+    [_layoutManager setExtraLineFragmentRect:CPRectMake(0,0) usedRect:CPRectMake(0,0) textContainer:nil];
 
     do {
         if (!CPLocationInRange(glyphIndex, _attributesRange))
@@ -127,10 +129,11 @@ var _sharedSimpleTypesetter = nil;
             }
             isNewline = YES;
             isWordWrapped = YES;
+            glyphIndex = CPMaxRange(lineRange) - 1;
         }
-        _lineHeight = Math.max(_lineHeight, ascent - descent + leading);
         lineWidth += glyphBound.size.width;
-        _lineBase =  Math.max(_lineBase, ascent);
+        _lineHeight = Math.max(_lineHeight, ascent - descent + leading);
+        _lineBase = Math.max(_lineBase, ascent);
         if (isNewline)
         {
             [_layoutManager setTextContainer:_currentTextContainer forGlyphRange:lineRange];
@@ -147,11 +150,17 @@ var _sharedSimpleTypesetter = nil;
             _lineBase = 0;
             numLines++;
 
-            if (!isWordWrapped)
+            if (glyphIndex + 1 == [_textStorage length])
             {
                 rect = CPRectMake(lineOrigin.x, lineOrigin.y, containerSize.width, _lineHeight);
                 [_layoutManager setExtraLineFragmentRect:rect usedRect:rect textContainer:_currentTextContainer];
             }
+            else
+            {
+                rect = CPRectMake(lineOrigin.x, lineOrigin.y - _lineHeight, containerSize.width, _lineHeight);
+                [_layoutManager setExtraLineFragmentRect:rect usedRect:rect textContainer:_currentTextContainer];
+            }
+            
             lineRange = CPMakeRange(glyphIndex+1, 0);
             wrapRange = CPMakeRange(0, 0);
             wrapWidth = 0;
@@ -169,6 +178,9 @@ var _sharedSimpleTypesetter = nil;
         // FIXME: handle line fragment padding
         [_layoutManager setLineFragmentRect:rect forGlyphRange:lineRange usedRect:rect];
         [_layoutManager setLocation:CPMakePoint(0, _lineBase) forStartOfGlyphRange:lineRange];
+        
+        rect = CPRectMake(lineOrigin.x + lineWidth, lineOrigin.y, containerSize.width - lineWidth, _lineHeight);
+        [_layoutManager setExtraLineFragmentRect:rect usedRect:rect textContainer:_currentTextContainer];
     }
 }
 @end

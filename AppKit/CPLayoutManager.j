@@ -211,6 +211,8 @@ var _objectsInRange = function(aList, aRange)
         CGContextSetFillColor(context, run.textColor);
         CGContextSetFont(context, run.font);
 
+        CPLog.trace(_cmd+" paint run '"+string+"' range "+CPStringFromRange(run._range)+" at "+CPStringFromPoint(orig));
+
         CGContextShowTextAtPoint(context, orig.x, orig.y, string, string.length);
         CGContextRestoreGState(context);
 
@@ -427,11 +429,14 @@ var _objectsInRange = function(aList, aRange)
         _isValidatingLayoutAndGlyphs = NO;
         return;
     }
+
+    if (!removeRange.location)   // We erase all lines 
+        [self setExtraLineFragmentRect:CPRectMake(0,0) usedRect:CPRectMake(0,0) textContainer:nil];
+
+    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:3 nextGlyphIndex:nil];
     if (removeRange.length)    
         [_lineFragments removeObjectsInRange:removeRange];
 
-    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:3 nextGlyphIndex:nil];
-    
     _isValidatingLayoutAndGlyphs = NO;
 }
 
@@ -449,7 +454,7 @@ var _objectsInRange = function(aList, aRange)
     {
         if (_lineFragments.length)
         {
-            firstFragmentIndex = 0;
+            firstFragmentIndex = _lineFragments.length - 1;
         }
         else
         {
@@ -462,9 +467,7 @@ var _objectsInRange = function(aList, aRange)
         }
     }
     var fragment = _lineFragments[firstFragmentIndex],
-        range = CPCopyRange(fragment._range),
-        y = fragment._fragmentRect.origin.y,
-        lineHeight = fragment._fragmentRect.size.height;
+        range = CPCopyRange(fragment._range);
 
     fragment._isInvalid = YES;
 
