@@ -81,8 +81,8 @@ CPTableColumnUserResizingMask   = 1 << 1;
         var textDataView = [CPTextField new];
         [textDataView setLineBreakMode:CPLineBreakByTruncatingTail];
         [textDataView setValue:[CPColor colorWithHexString:@"333333"] forThemeAttribute:@"text-color"];
-        [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateSelected];
-        [textDataView setValue:[CPFont boldSystemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateSelected];
+        [textDataView setValue:[CPColor whiteColor] forThemeAttribute:@"text-color" inState:CPThemeStateSelectedDataView];
+        [textDataView setValue:[CPFont boldSystemFontOfSize:12] forThemeAttribute:@"font" inState:CPThemeStateSelectedDataView];
         [textDataView setValue:CPCenterVerticalTextAlignment forThemeAttribute:@"vertical-alignment"];
         [self setDataView:textDataView];
     }
@@ -395,7 +395,9 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
     CPTableColumnWidthKey        = @"CPTableColumnWidthKey",
     CPTableColumnMinWidthKey     = @"CPTableColumnMinWidthKey",
     CPTableColumnMaxWidthKey     = @"CPTableColumnMaxWidthKey",
-    CPTableColumnResizingMaskKey = @"CPTableColumnResizingMaskKey";
+    CPTableColumnResizingMaskKey = @"CPTableColumnResizingMaskKey",
+    CPTableColumnIsHiddenkey     = @"CPTableColumnIsHiddenKey",
+    CPSortDescriptorPrototypeKey = @"CPSortDescriptorPrototypeKey";
 
 @implementation CPTableColumn (CPCoding)
 
@@ -417,6 +419,9 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
         [self setHeaderView:[aCoder decodeObjectForKey:CPTableColumnHeaderViewKey]];
 
         _resizingMask  = [aCoder decodeBoolForKey:CPTableColumnResizingMaskKey];
+        _isHidden = [aCoder decodeBoolForKey:CPTableColumnIsHiddenkey];
+        
+        _sortDescriptorPrototype = [aCoder decodeObjectForKey:CPSortDescriptorPrototypeKey];
     }
 
     return self;
@@ -434,6 +439,9 @@ var CPTableColumnIdentifierKey   = @"CPTableColumnIdentifierKey",
     [aCoder encodeObject:_dataView forKey:CPTableColumnDataViewKey];
 
     [aCoder encodeObject:_resizingMask forKey:CPTableColumnResizingMaskKey];
+    [aCoder encodeBool:_isHidden forKey:CPTableColumnIsHiddenkey];
+    
+    [aCoder encodeObject:_sortDescriptorPrototype forKey:CPSortDescriptorPrototypeKey];
 }
 
 @end
