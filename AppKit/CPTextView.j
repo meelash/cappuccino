@@ -753,7 +753,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)sizeToFit
 {
-    var size = [self bounds].size,
+    var size = [self frameSize],
         rect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(0, [_textStorage length]) inTextContainer:_textContainer];
 
     if ([_layoutManager extraLineFragmentTextContainer] === _textContainer)
@@ -770,7 +770,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 
 - (void)setConstrainedFrameSize:(CPSize)desiredSize
 {
-    var boundsSize = [self bounds].size,
+    var frameSize = [self frameSize],
         minSize = [self minSize],
         maxSize = [self maxSize];
 
@@ -783,7 +783,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     }
     else
     {
-        desiredSize.width = boundsSize.width;
+        desiredSize.width = frameSize.width;
     }
     if (_isVerticallyResizable)
     {
@@ -794,7 +794,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     }
     else
     {
-        desiredSize.height = boundsSize.height;
+        desiredSize.height = frameSize.height;
     }
 
     if (_isHorizontallyResizable || _isVerticallyResizable)
@@ -951,15 +951,12 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     else
         _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location, 1) inTextContainer:_textContainer];
 
-    if (CPRectIsEmpty(_carretRect))
-        _carretRect = CPRectMake(_textContainerOrigin.x, _textContainerOrigin.y, 1, [[self font] size]);
-    else
-    {
-        _carretRect.origin.x += _textContainerOrigin.x;
-        _carretRect.origin.y += _textContainerOrigin.y;            
-        _carretRect.size.width = 1;
-    }
-
+    _carretRect.origin.x += _textContainerOrigin.x;
+    _carretRect.origin.y += _textContainerOrigin.y;            
+    _carretRect.size.width = 1;
+    if (_carretRect.size.height == 0)
+        _carretRect.size.height = [[self font] size];
+        
     if (flag)
     {
         _drawCarret = flag;
