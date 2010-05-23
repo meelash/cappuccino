@@ -395,7 +395,6 @@ var _objectsInRange = function(aList, aRange)
     var startIndex = CPNotFound,
         removeRange = CPMakeRange(0,0);
 
-    /* TODO: add an invalid fragment counter instead of checking all fragments */
     if (_lineFragments.length)
     {
         for (var i = 0; i < _lineFragments.length; i++)
@@ -424,7 +423,7 @@ var _objectsInRange = function(aList, aRange)
     if (!removeRange.location)   // We erase all lines 
         [self setExtraLineFragmentRect:CPRectMake(0,0) usedRect:CPRectMake(0,0) textContainer:nil];
 
-    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:3 nextGlyphIndex:nil];
+    [_typesetter layoutGlyphsInLayoutManager:self startingAtGlyphIndex:startIndex maxNumberOfLineFragments:-1 nextGlyphIndex:nil];
     if (removeRange.length)    
         [_lineFragments removeObjectsInRange:removeRange];
 
@@ -440,7 +439,8 @@ var _objectsInRange = function(aList, aRange)
 
 - (void)invalidateLayoutForCharacterRange:(CPRange)aRange isSoft:(BOOL)flag actualCharacterRange:(CPRangePointer)actualCharRange
 {
-    var firstFragmentIndex = _indexOfObjectWithLocationInRange(_lineFragments, aRange.location);   
+    var firstFragmentIndex = _indexOfObjectWithLocationInRange(_lineFragments, aRange.location);
+
     if (firstFragmentIndex == CPNotFound)
     {
         if (_lineFragments.length)
