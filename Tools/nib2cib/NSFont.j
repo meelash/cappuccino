@@ -44,7 +44,10 @@
     if (fontName === "LucidaGrande" || fontName === "LucidaGrande-Bold")
         fontName = "Arial";
 
-    return [self _initWithName:fontName size:size bold:isBold];
+    if (isBold)
+        return [CPFont boldFontWithName:fontName size:size];
+
+    return [CPFont fontWithName:fontName size:size];
 }
 
 @end
