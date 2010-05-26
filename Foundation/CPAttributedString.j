@@ -520,21 +520,11 @@
                     reason:"-"+_cmd+" invalid range: "+(aRange?CPStringFromRange(aRange):"nil")];
 
     if (!aString)
-<<<<<<< HEAD
     {
         [self deleteCharactersInRange:aRange];
         [self endEditing];
         return;
     }
-=======
-        aString = "";
-
-    var startingIndex = [self _indexOfEntryWithIndex:aRange.location],
-        startingRangeEntry = _rangeEntries[startingIndex],
-        endingIndex = [self _indexOfEntryWithIndex:MAX(CPMaxRange(aRange) - 1, 0)],
-        endingRangeEntry = _rangeEntries[endingIndex],
-        additionalLength = aString.length - aRange.length;
->>>>>>> b98f0b14272aa6c3f4ab09a6a6b87aae4868acc9
 
     _string = _string.substring(0, aRange.location) + aString + _string.substring(CPMaxRange(aRange));
 
@@ -612,15 +602,6 @@
                 _rangeEntries[current++].range.location += delta;
         }
     }
-<<<<<<< HEAD
-=======
-
-    endingIndex = startingIndex + 1;
-
-    while(endingIndex < _rangeEntries.length)
-        _rangeEntries[endingIndex++].range.location+=additionalLength;
-
->>>>>>> b98f0b14272aa6c3f4ab09a6a6b87aae4868acc9
     [self endEditing];
 }
 
