@@ -341,7 +341,10 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     }
     
     if ([self shouldDrawInsertionPoint])
+    {
+        [self updateInsertionPointStateAndRestartTimer:NO];
         [self drawInsertionPointInRect:_carretRect color:_insertionPointColor turnedOn:_drawCarret];
+    }
 }
 
 - (void)setSelectedRange:(CPRange)range
@@ -956,7 +959,7 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     _carretRect.size.width = 1;
     if (_carretRect.size.height == 0)
         _carretRect.size.height = [[self font] size];
-        
+
     if (flag)
     {
         _drawCarret = flag;
