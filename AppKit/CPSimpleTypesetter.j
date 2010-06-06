@@ -144,12 +144,7 @@ var _sharedSimpleTypesetter = nil;
             [_layoutManager setLocation:CPMakePoint(0, _lineBase) forStartOfGlyphRange:lineRange];
 
             lineOrigin.x = 0;
-            lineOrigin.y += _lineHeight;
-            _lineHeight = 0;
-            lineWidth = 0;
-            _lineBase = 0;
-            numLines++;
-
+            
             if (glyphIndex + 1 == [_textStorage length])
             {
                 rect = CPRectMake(lineOrigin.x, lineOrigin.y, containerSize.width, _lineHeight);
@@ -157,9 +152,15 @@ var _sharedSimpleTypesetter = nil;
             }
             else
             {
-                rect = CPRectMake(lineOrigin.x, lineOrigin.y - _lineHeight, containerSize.width, _lineHeight);
+                rect = CPRectMake(lineOrigin.x, lineOrigin.y + _lineHeight, containerSize.width, _lineHeight);
                 [_layoutManager setExtraLineFragmentRect:rect usedRect:rect textContainer:_currentTextContainer];
             }
+            
+            lineOrigin.y += _lineHeight;
+            _lineHeight = 0;
+            lineWidth = 0;
+            _lineBase = 0;
+            numLines++;
             
             lineRange = CPMakeRange(glyphIndex+1, 0);
             wrapRange = CPMakeRange(0, 0);
