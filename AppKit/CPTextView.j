@@ -944,7 +944,11 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     if (_selectionRange.location == [_textStorage length])
     {
         if ([_layoutManager extraLineFragmentTextContainer] === _textContainer)
+        {
             _carretRect = [_layoutManager extraLineFragmentUsedRect];
+            if ([[_textStorage string] characterAtIndex:_selectionRange.location - 1] === '\n')
+                _carretRect.origin.y += _carretRect.size.height;
+        }
         else
         {
             _carretRect = [_layoutManager boundingRectForGlyphRange:CPMakeRange(_selectionRange.location - 1, 1) inTextContainer:_textContainer];
