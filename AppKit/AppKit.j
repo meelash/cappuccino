@@ -80,6 +80,7 @@
 @import "CPTableColumn.j"
 @import "CPTableView.j"
 @import "CPTextContainer.j"
+@import "CPText.j"
 @import "CPTextField.j"
 @import "CPTextStorage.j"
 @import "CPTextView.j"
