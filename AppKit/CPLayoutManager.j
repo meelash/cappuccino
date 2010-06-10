@@ -128,6 +128,11 @@ var _objectsInRange = function(aList, aRange)
             else
                 run.backgroundColor = [CPColor clearColor];
 
+            if ([attributes containsKey:CPUnderlineStyleAttributeName])
+                run.underline = [attributes objectForKey:CPUnderlineStyleAttributeName];
+            else
+                run.underline = nil;
+
             run.advancements = [];
             [run.font getAdvancements:run.advancements forGlyphs:run.string count:run.string.length];
 
@@ -168,6 +173,63 @@ var _objectsInRange = function(aList, aRange)
     }
     return _glyphsFrames;
 }
+
+- (void)drawUnderlineForGlyphRange:(CPRange)glyphRange 
+                    underlineType:(int)underlineVal 
+                    baselineOffset:(float)baselineOffset
+                    containerOrigin:(CPPoint)containerOrigin
+{
+    var runs = _objectsInRange(_runs, glyphRange),
+        i, j,
+        start = 0,
+        orig = CPPointMake(_location.x + _fragmentRect.origin.x + containerOrigin.x, 
+                _location.y + _fragmentRect.origin.y + containerOrigin.y + baselineOffset);
+    
+    var index = _indexOfObjectWithLocationInRange(_runs, runs[0]._range.location);
+    if (index > 0)
+    {
+        for (i = 0; i < index; i++)
+        {
+            for (j = 0; j < _runs[i].advancements.length; j++)
+                orig.x += _runs[i].advancements[j].width;
+        }
+    }
+    
+    var context = [[CPGraphicsContext currentContext] graphicsPort],
+        c = runs.length;
+    for (i = 0; i < c; i++)
+    {
+        var run = runs[i];
+
+        if (glyphRange.location < run._range.location)
+            start = run._range.location;
+        else
+            start = glyphRange.location;
+
+        var locationInRun = start - run._range.location,
+            width = 0;
+
+        for (j = 0; j < locationInRun; j++)
+            orig.x += run.advancements[j].width;
+
+        locationInRun += Math.min(run._range.length, glyphRange.length);
+        for (; j < locationInRun; j++)
+            width += run.advancements[j].width;    
+
+        var underlinePos = [run.font underlinePosition];
+        
+        CGContextSaveGState(context);
+        CGContextSetStrokeColor(context, run.textColor);
+        CGContextSetLineWidth(context, 1.0);
+        
+        CGContextMoveToPoint(context, orig.x, orig.y - underlinePos);
+        CGContextAddLineToPoint(context, orig.x + width, orig.y - underlinePos);
+        CGContextStrokePath(context);
+        
+        CGContextRestoreGState(context);
+    }
+}
+
 - (void)drawInContext:(CGContext)context atPoint:(CPPoint)aPoint forRange:(CPRangePointer /* in and out */)aRange
 {
     var runs = _objectsInRange(_runs, aRange),
@@ -205,6 +267,15 @@ var _objectsInRange = function(aList, aRange)
         CGContextShowTextAtPoint(context, orig.x, orig.y, string, string.length);
         CGContextRestoreGState(context);
 
+        if (run.underline)
+        {
+            [[_textContainer layoutManager] underlineGlyphRange:CPCopyRange(run._range)
+                underlineType:[run.underline intValue] 
+                lineFragmentRect:_fragmentRect
+                lineFragmentGlyphRange:_range
+                containerOrigin:aPoint
+                ];
+        }
         for (var j = loc; j < run.advancements.length; j++)
             orig.x += run.advancements[j].width;
     }
@@ -592,9 +663,35 @@ var _objectsInRange = function(aList, aRange)
     }
 }
 
-/* 
-    FIXME: underline drawing should used [CPLayoutManager underlineGlyphRange:underlineType:lineFragmentRect:lineFragmentGlyphRange:containerOrigin:]
-*/
+- (void)drawUnderlineForGlyphRange:(CPRange)glyphRange 
+                    underlineType:(int)underlineVal 
+                    baselineOffset:(float)baselineOffset 
+                    lineFragmentRect:(CGRect)lineFragmentRect 
+                    lineFragmentGlyphRange:(CPRange)lineGlyphRange
+                    containerOrigin:(CPPoint)containerOrigin
+{
+    var fragment = _objectWithLocationInRange(_lineFragments, glyphRange.location);
+    if (fragment)
+        [fragment drawUnderlineForGlyphRange:glyphRange underlineType:underlineVal baselineOffset:baselineOffset containerOrigin:containerOrigin];
+}
+
+- (void)underlineGlyphRange:(CPRange)glyphRange
+              underlineType:(int)underlineType 
+           lineFragmentRect:(CGRect)lineFragmentRect
+     lineFragmentGlyphRange:(CPRange)lineGlyphRange
+            containerOrigin:(CGPoint)containerOrigin
+{
+    /*
+        TODO correct glyphRange according to underlineType
+    */
+    [self drawUnderlineForGlyphRange:glyphRange 
+                       underlineType:underlineType 
+                      baselineOffset:0 /* FIXME */
+                    lineFragmentRect:lineFragmentRect 
+              lineFragmentGlyphRange:lineGlyphRange 
+                     containerOrigin:containerOrigin];
+}
+
 - (void)drawGlyphsForGlyphRange:(CPRange)aRange atPoint:(CPPoint)aPoint
 {
     [self _validateLayoutAndGlyphs];
@@ -1054,5 +1151,41 @@ var _objectsInRange = function(aList, aRange)
 - (void)setLineFragmentFactory:(Class)lineFragmentFactory
 {
     _lineFragmentFactory = lineFragmentFactory;
+}
+
+- (CPArray)rectArrayForCharacterRange:(CPRange)charRange 
+         withinSelectedCharacterRange:(CPRange)selectedCharRange 
+                      inTextContainer:(CPTextContainer)container 
+                            rectCount:(CPRectPointer)rectCount
+{
+    [self _validateLayoutAndGlyphs];
+
+    var rectArray = [CPArray array];
+    var lineFragments = _objectsInRange(_lineFragments, selectedCharRange);
+    if (!lineFragments.length)
+        return rectArray;
+
+    for (var i = 0; i < lineFragments.length; i++)
+    {
+        var fragment = lineFragments[i];
+        if (fragment._textContainer === container)
+        {
+            var frames = [fragment glyphFrames],
+                rect = nil;
+            for (var j = 0; j < frames.length; j++)
+            {
+                if (CPLocationInRange(fragment._range.location + j, selectedCharRange))
+                {
+                    if (!rect)
+                        rect = CPRectCreateCopy(frames[j]);
+                    else
+                        rect = CPRectUnion(rect, frames[j]);
+                }
+            }
+            if (rect)
+                rectArray.push(rect);
+        }
+    }
+    return rectArray;
 }
 @end
