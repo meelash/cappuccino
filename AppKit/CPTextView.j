@@ -314,32 +314,31 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     var ctx = [[CPGraphicsContext currentContext] graphicsPort];
     CGContextClearRect(ctx, aRect);
 
-    if (!CPEmptyRange(_selectionRange))
-    {
-        /*
-            FIXME: used CPLayoutManager rectArrayForGlyphRange:withinSelectedGlyphRange:inTextContainer:rectCount: 
-            for highlighting selected 'glyphs'.
-        
-            Also selected background color have to hide other background painting (normal or temporary) see LayoutManagerDemo
-        */
-        var rect = [_layoutManager boundingRectForGlyphRange:_selectionRange inTextContainer:_textContainer];
-        CGContextSaveGState(ctx);
-    
-        rect.origin.x += _textContainerOrigin.x;
-        rect.origin.y += _textContainerOrigin.y;
+    var range = [_layoutManager glyphRangeForBoundingRect:aRect inTextContainer:_textContainer];
+    if (range.length)
+        [_layoutManager drawBackgroundForGlyphRange:range atPoint:_textContainerOrigin];
 
+    if (_selectionRange.length)
+    {
+        var rects = [_layoutManager rectArrayForCharacterRange:_selectionRange withinSelectedCharacterRange:_selectionRange 
+                        inTextContainer:_textContainer rectCount:nil];
+
+        CGContextSaveGState(ctx);
         CGContextSetFillColor(ctx, [_selectedTextAttributes objectForKey:CPBackgroundColorAttributeName]);
-        CGContextFillRect(ctx, rect);
+
+        for (var i = 0; i < rects.length; i++)
+        {
+            rects[i].origin.x += _textContainerOrigin.x;
+            rects[i].origin.y += _textContainerOrigin.y;
+
+            CGContextFillRect(ctx, rects[i]);
+        }
         CGContextRestoreGState(ctx);
     }
 
-    var range = [_layoutManager glyphRangeForBoundingRect:aRect inTextContainer:_textContainer];
-    if (!CPEmptyRange(range))
-    {
-        [_layoutManager drawBackgroundForGlyphRange:range atPoint:_textContainerOrigin];
+    if (range.length)
         [_layoutManager drawGlyphsForGlyphRange:range atPoint:_textContainerOrigin];
-    }
-    
+
     if ([self shouldDrawInsertionPoint])
     {
         [self updateInsertionPointStateAndRestartTimer:NO];
