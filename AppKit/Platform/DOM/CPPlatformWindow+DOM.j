@@ -144,10 +144,10 @@ var KeyCodesToPrevent = {},
 
 KeyCodesToPrevent[CPKeyCodes.A] = YES;
 
-KeyCodesToFunctionUnicodeMap[CPKeyCodes.BACKSPACE]     = CPBackspaceCharacter;
-KeyCodesToFunctionUnicodeMap[CPKeyCodes.DELETE]        = CPDeleteCharacter;
-KeyCodesToFunctionUnicodeMap[CPKeyCodes.TAB]           = CPTabCharacter;
-KeyCodesToFunctionUnicodeMap[CPKeyCodes.ENTER]         = CPCarriageReturnCharacter;
+KeyCodesToFunctionUnicodeMap[CPKeyCodes.BACKSPACE]     = String.fromCharCode(CPBackspaceCharacter);
+KeyCodesToFunctionUnicodeMap[CPKeyCodes.DELETE]        = String.fromCharCode(CPDeleteCharacter);
+KeyCodesToFunctionUnicodeMap[CPKeyCodes.TAB]           = String.fromCharCode(CPTabCharacter);
+KeyCodesToFunctionUnicodeMap[CPKeyCodes.ENTER]         = String.fromCharCode(CPCarriageReturnCharacter);
 KeyCodesToFunctionUnicodeMap[CPKeyCodes.ESC]           = CPEscapeFunctionKey;
 KeyCodesToFunctionUnicodeMap[CPKeyCodes.PAGE_UP]       = CPPageUpFunctionKey;
 KeyCodesToFunctionUnicodeMap[CPKeyCodes.PAGE_DOWN]     = CPPageDownFunctionKey;
