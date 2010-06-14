@@ -167,6 +167,11 @@ CPControlGlyph = 0x00ffffff;
     return ([self ascender] - [self descender]) * 0.2;  /* FIXME: */
 }
 
+- (float)underlinePosition
+{
+    return ([self descender] / 2.0);  /* FIXME: */
+}
+
 - (CPSize)advancementForGlyph:(CPGlyph)glyph
 {
     var size = CPSizeCreateCopy([self boundingRectForGlyph:glyph].size);
