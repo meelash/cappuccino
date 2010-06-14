@@ -26,11 +26,9 @@
 @import "CPFontPanel.j"
 @import "CPFontDescriptor.j"
 
-
-
 /* 
     modifyFont: sender's tag
- */
+*/
 CPNoFontChangeAction    = 0;
 CPViaPanelFontAction    = 1;
 CPAddTraitFontAction    = 2;
@@ -270,7 +268,7 @@ var _CPLexicalFontWeights = nil,
     else
         [[attributes objectForKey:CPFontTraitsAttribute] setObject:[CPNumber numberWithUnsignedInt:symbolicTrait] forKey:CPFontSymbolicTrait];
     
-    return [CPFont fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
+    return [[aFont class] fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
 }
 
 /*!
@@ -304,7 +302,7 @@ var _CPLexicalFontWeights = nil,
     else
         [[attributes objectForKey:CPFontTraitsAttribute] setObject:[CPNumber numberWithUnsignedInt:symbolicTrait] forKey:CPFontSymbolicTrait];
     
-    return [CPFont fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
+    return [[aFont class] fontWithDescriptor:[CPFontDescriptor fontDescriptorWithFontAttributes:attributes] size:0.0];
 }
 
 /*!
@@ -315,7 +313,7 @@ var _CPLexicalFontWeights = nil,
 */
 - (CPFont)convertFont:(CPFont)aFont toSize:(float)aSize
 {
-    return [CPFont fontWithDescriptor:[aFont fontDescriptor] size:aSize];
+    return [[aFont class] fontWithDescriptor:[aFont fontDescriptor] size:aSize];
 }
 
 - (CPFont)convertWeight:(BOOL)increaseFlag ofFont:(CPFont)aFont
@@ -368,6 +366,7 @@ var _CPLexicalFontWeights = nil,
             newFont = aFont;
             break;
     }
+
     return newFont;
 }
 
@@ -448,7 +447,7 @@ var _CPLexicalFontWeights = nil,
 {
     _selectedFont = aFont;
     _isMultiple = isMultiple;
-    
+
     var panel = [self fontPanel:NO];
     if (panel)
         [panel setPanelFont:_selectedFont isMultiple:_isMultiple];
@@ -511,12 +510,12 @@ var _CPFontDetectCompareFonts = function(fontA, fontB) {
     	_CPFontDetectSpan.style.fontFamily = '"' + fontA + '"';
         _CPFontDetectCache[fontA] = a = { w: _CPFontDetectSpan.offsetWidth, h: _CPFontDetectSpan.offsetHeight };
     }
-	
-	_CPFontDetectSpan.style.fontFamily= '"' + fontB + '", "' + fontA + '"';
-	var bWidth = _CPFontDetectSpan.offsetWidth;
-	var bHeight = _CPFontDetectSpan.offsetHeight;
-	
-	return (a.w != bWidth || a.h != bHeight);
+
+    _CPFontDetectSpan.style.fontFamily= '"' + fontB + '", "' + fontA + '"';
+    var bWidth = _CPFontDetectSpan.offsetWidth;
+    var bHeight = _CPFontDetectSpan.offsetHeight;
+
+    return (a.w != bWidth || a.h != bHeight);
 }
 
 // Test the candidate fonts pairwise until we find two that are different. Otherwise return the first.
