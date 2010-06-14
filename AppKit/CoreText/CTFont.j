@@ -187,8 +187,7 @@ function CTFontGetGlyphWithName(/* CTFont */font, /* CPString */glyphName)
 
 function CTFontGetLeading(/* CTFont */font)
 {
-    /* TODO: */ 
-    return 0.0;
+    return [font leading];
 }
 
 function CTFontGetUnderlinePosition(/* CTFont */font)
