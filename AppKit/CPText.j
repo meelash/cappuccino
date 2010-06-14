@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+@import "CPView.j"
+
 /*
     CPText notifications
 */
@@ -37,7 +39,6 @@ CPEnterCharacter              = 0x0003;
 CPBackspaceCharacter          = 0x0008;
 CPBackTabCharacter            = 0x0019;
 CPDeleteCharacter             = 0x007f;
-
 
 /*!
     @ingroup appkit
