@@ -58,6 +58,7 @@
 @import "CPImage.j"
 @import "CPImageView.j"
 @import "CPLayoutManager.j"
+@import "CPKeyBinding.j"
 @import "CPMenu.j"
 @import "CPMenuItem.j"
 @import "CPOpenPanel.j"
