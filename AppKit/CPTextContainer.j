@@ -177,3 +177,35 @@ CPLineMovesUp = 4;
     return resultRect;
 }
 @end
+
+var CPTextContainerSizeKey                  = @"CPTextContainerSizeKey",
+    CPTextContainerTextViewKey              = @"CPTextContainerTextViewKey",
+    CPTextContainerLayoutManagerKey         = @"CPTextContainerLayoutManagerKey",
+    CPTextContainerLineFragmentPaddingKey   = @"CPTextContainerLineFragmentPaddingKey";
+
+@implementation CPTextContainer (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+
+    if (self)
+    {
+        _size = [aCoder decodeObjectForKey:CPTextContainerSizeKey];
+        _textView = [aCoder decodeObjectForKey:CPTextContainerTextViewKey];
+        _layoutManager = [aCoder decodeObjectForKey:CPTextContainerLayoutManagerKey];
+        _lineFragmentPadding = [aCoder decodeFloatForKey:CPTextContainerLineFragmentPaddingKey];
+    }
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeObject:_size forKey:CPTextContainerSizeKey];
+    [aCoder encodeObject:_textView forKey:CPTextContainerTextViewKey];
+    [aCoder encodeObject:_layoutManager forKey:CPTextContainerLayoutManagerKey];
+    [aCoder encodeFloat:_lineFragmentPadding forKey:CPTextContainerLineFragmentPaddingKey];
+}
+
+@end

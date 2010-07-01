@@ -77,3 +77,21 @@ var CPSystemTypesetterFactory = Nil;
 
 @import "CPSimpleTypesetter.j"
 [CPTypesetter _setSystemTypesetterFactory:[CPSimpleTypesetter class]];
+
+
+@implementation CPTypesetter (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+    
+    if (self)
+    {
+    }
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+}

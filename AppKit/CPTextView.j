@@ -970,3 +970,106 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
     }
 }
 @end
+
+var CPTextViewTextStorageKey                = @"CPTextViewTextStorageKey",
+    CPTextViewTextContainerKey              = @"CPTextViewTextContainerKey",
+    CPTextViewLayoutManagerKey              = @"CPTextViewLayoutManagerKey",
+    CPTextViewDelegateKey                   = @"CPTextViewDelegateKey",
+    CPTextViewTextContainerInsetKey         = @"CPTextViewTextContainerInsetKey",
+    CPTextViewTextContainerOriginKey        = @"CPTextViewTextContainerOriginKey",
+    CPTextViewSelectionRangeKey             = @"CPTextViewSelectionRangeKey",
+    CPTextViewSelectedTextAttributesKey     = @"CPTextViewSelectedTextAttributesKey",
+    CPTextViewSelectionGranularityKey       = @"CPTextViewSelectionGranularityKey",
+    CPTextViewInsertionPointColorKey        = @"CPTextViewInsertionPointColorKey",
+    CPTextViewTypingAttributesKey           = @"CPTextViewTypingAttributesKey",
+    CPTextViewEditableKey                   = @"CPTextViewEditableKey",
+    CPTextViewSelectableKey                 = @"CPTextViewSelectableKey",
+    CPTextViewDrawCarretKey                 = @"CPTextViewDrawCarretKey",
+    CPTextViewCarretRectKey                 = @"CPTextViewCarretRectKey",
+    CPTextViewFontKey                       = @"CPTextViewFontKey",
+    CPTextViewTextColorKey                  = @"CPTextViewTextColorKey",
+    CPTextViewMinSizeKey                    = @"CPTextViewMinSizeKey",
+    CPTextViewMaxSizeKey                    = @"CPTextViewMaxSizeKey",
+    CPTextViewRichTextKey                   = @"CPTextViewRichTextKey",
+    CPTextViewUsesFontPanelKey              = @"CPTextViewUsesFontPanelKey",
+    CPTextViewAllowsUndoKey                 = @"CPTextViewAllowsUndoKey",
+    CPTextViewHorizontallyResizableKey      = @"CPTextViewHorizontallyResizableKey",
+    CPTextViewVerticallyResizableKey        = @"CPTextViewVerticallyResizableKey";
+    
+@implementation CPTextView (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super initWithCoder:aCoder];
+
+    if (self)
+    {
+        _textStorage = [aCoder decodeObjectForKey:CPTextViewTextStorageKey];
+        _textContainer = [aCoder decodeObjectForKey:CPTextViewTextContainerKey];
+        _layoutManager = [aCoder decodeObjectForKey:CPTextViewLayoutManagerKey];
+        [self setDelegate:[aCoder decodeObjectForKey:CPTextViewDelegateKey]];
+        
+        _textContainerInset = [aCoder decodeObjectForKey:CPTextViewTextContainerInsetKey];
+        _textContainerOrigin = [aCoder decodeObjectForKey:CPTextViewTextContainerOriginKey];
+        
+        _selectionGranularity = [aCoder decodeIntForKey:CPTextViewSelectionGranularityKey];
+        _insertionPointColor = [aCoder decodeObjectForKey:CPTextViewInsertionPointColorKey];
+        _typingAttributes = [aCoder decodeObjectForKey:CPTextViewTypingAttributesKey];
+        _isEditable = [aCoder decodeBoolForKey:CPTextViewEditableKey];
+        _isSelectable = [aCoder decodeBoolForKey:CPTextViewSelectableKey];
+        _drawCarret = [aCoder decodeBoolForKey:CPTextViewDrawCarretKey];
+        _carretRect = [aCoder decodeObjectForKey:CPTextViewCarretRectKey];
+        _font = [aCoder decodeObjectForKey:CPTextViewFontKey];
+        _textColor = [aCoder decodeObjectForKey:CPTextViewTextColorKey];
+        _minSize = [aCoder decodeObjectForKey:CPTextViewMinSizeKey];
+        _maxSize = [aCoder decodeObjectForKey:CPTextViewMaxSizeKey];
+        _isRichText = [aCoder decodeBoolForKey:CPTextViewRichTextKey];
+        _usesFontPanel = [aCoder decodeBoolForKey:CPTextViewUsesFontPanelKey];
+        _allowsUndo = [aCoder decodeBoolForKey:CPTextViewAllowsUndoKey];
+        _isHorizontallyResizable = [aCoder decodeBoolForKey:CPTextViewHorizontallyResizableKey];
+        _isVerticallyResizable = [aCoder decodeBoolForKey:CPTextViewVerticallyResizableKey];
+        
+        //needed?
+        _selectionRange = [aCoder decodeObjectForKey:CPTextViewSelectionRangeKey];
+        _selectedTextAttributes = [aCoder decodeObjectForKey:CPTextViewSelectedTextAttributesKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+
+    [aCoder encodeObject:_textStorage forKey:CPTextViewTextStorageKey];
+    [aCoder encodeObject:_textContainer forKey:CPTextViewTextContainerKey];
+    [aCoder encodeObject:_layoutManager forKey:CPTextViewLayoutManagerKey];
+    [aCoder encodeObject:_delegate forKey:CPTextViewDelegateKey];
+    
+    [aCoder encodeObject:_textContainerInset forKey:CPTextViewTextContainerInsetKey];
+    [aCoder encodeObject:_textContainerOrigin forKey:CPTextViewTextContainerOriginKey];
+    
+    [aCoder encodeInt:_selectionGranularity forKey:CPTextViewSelectionGranularityKey];
+    [aCoder encodeObject:_insertionPointColor forKey:CPTextViewInsertionPointColorKey];
+    [aCoder encodeObject:_typingAttributes forKey:CPTextViewTypingAttributesKey];
+    [aCoder encodeBool:_isEditable forKey:CPTextViewEditableKey];
+    [aCoder encodeBool:_isSelectable forKey:CPTextViewSelectableKey];
+    [aCoder encodeBool:_drawCarret forKey:CPTextViewDrawCarretKey];
+    [aCoder encodeObject:_carretRect forKey:CPTextViewCarretRectKey];
+    [aCoder encodeObject:_font forKey:CPTextViewFontKey];
+    [aCoder encodeObject:_textColor forKey:CPTextViewTextColorKey];
+    [aCoder encodeObject:_minSize forKey:CPTextViewMinSizeKey];
+    [aCoder encodeObject:_maxSize forKey:CPTextViewMaxSizeKey];
+    [aCoder encodeBool:_isRichText forKey:CPTextViewRichTextKey];
+    [aCoder encodeBool:_usesFontPanel forKey:CPTextViewUsesFontPanelKey];
+    [aCoder encodeBool:_allowsUndo forKey:CPTextViewAllowsUndoKey];
+    [aCoder encodeBool:_isHorizontallyResizable forKey:CPTextViewHorizontallyResizableKey];
+    [aCoder encodeBool:_isVerticallyResizable forKey:CPTextViewVerticallyResizableKey];
+        
+    //needed?
+    [aCoder encodeObject:_selectionRange forKey:CPTextViewSelectionRangeKey];
+    [aCoder encodeObject:_selectedTextAttributes forKey:CPTextViewSelectedTextAttributesKey];
+}
+
+@end
+

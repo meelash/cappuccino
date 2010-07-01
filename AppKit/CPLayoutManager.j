@@ -290,6 +290,51 @@ var _objectsInRange = function(aList, aRange)
         return run.backgroundColor;
     return [CPColor clearColor];
 }
+
+@end
+
+var CPLineFragmentFragmentRectKey               = @"CPLineFragmentFragmentRectKey",
+    CPLineFragmentUsedRectKey                   = @"CPLineFragmentUsedRectKey",
+    CPLineFragmentLocationKey                   = @"CPLineFragmentLocationKey",
+    CPLineFragmentRangeKey                      = @"CPLineFragmentRangeKey",
+    CPLineFragmentTextContainerKey              = @"CPLineFragmentTextContainerKey",
+    CPLineFragmentInvalidKey                    = @"CPLineFragmentInvalidKey",
+    CPLineFragmentRunsKey                       = @"CPLineFragmentRunsKey",
+    CPLineFragmentGlyphsFramesKey               = @"CPLineFragmentGlyphsFramesKey";
+    
+@implementation _CPLineFragment (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+
+    if (self)
+    {
+        _fragmentRect = [aCoder decodeObjectForKey:CPLineFragmentFragmentRectKey];
+        _usedRect = [aCoder decodeObjectForKey:CPLineFragmentUsedRectKey];
+        _location = [aCoder decodeObjectForKey:CPLineFragmentLocationKey];
+        _range = [aCoder decodeObjectForKey:CPLineFragmentRangeKey];
+        _textContainer = [aCoder decodeObjectForKey:CPLineFragmentTextContainerKey];
+        _isInvalid = [aCoder decodeBoolForKey:CPLineFragmentInvalidKey];
+        _runs = [aCoder decodeObjectForKey:CPLineFragmentRunsKey];
+        _glyphsFrames = [aCoder decodeObjectForKey:CPLineFragmentGlyphsFramesKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeObject:_fragmentRect forKey:CPLineFragmentFragmentRectKey];
+    [aCoder encodeObject:_usedRect forKey:CPLineFragmentUsedRectKey];
+    [aCoder encodeObject:_location forKey:CPLineFragmentLocationKey];
+    [aCoder encodeObject:_range forKey:CPLineFragmentRangeKey];
+    [aCoder encodeObject:_textContainer forKey:CPLineFragmentTextContainerKey];
+    [aCoder encodeBool:_isInvalid forKey:CPLineFragmentInvalidKey];
+    [aCoder encodeObject:_runs forKey:CPLineFragmentRunsKey];
+    [aCoder encodeObject:_glyphsFrames forKey:CPLineFragmentGlyphsFramesKey];
+}
+
 @end
 
 @implementation _CPTemporaryAttributes : CPObject
@@ -313,6 +358,32 @@ var _objectsInRange = function(aList, aRange)
         "\n\t_range="+CPStringFromRange(_range) +
         "\n\t_attributes="+[_attributes description];
 }
+@end
+
+var CPTemporaryAttributesAttributesKey              = @"CPTemporaryAttributesAttributesKey",
+    CPTemporaryAttributesRangeKey                   = @"CPTemporaryAttributesRangeKey";
+    
+@implementation _CPTemporaryAttributes (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+
+    if (self)
+    {
+        _attributes = [aCoder decodeObjectForKey:CPTemporaryAttributesAttributesKey];
+        _range = [aCoder decodeObjectForKey:CPTemporaryAttributesRangeKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeObject:_attributes forKey:CPTemporaryAttributesAttributesKey];
+    [aCoder encodeObject:_range forKey:CPTemporaryAttributesRangeKey];
+}
+
 @end
 
 /*!
@@ -1188,4 +1259,49 @@ var _objectsInRange = function(aList, aRange)
     }
     return rectArray;
 }
+@end
+
+var CPLayoutManagerTextStorageKey               = @"CPLayoutManagerTextStorageKey",
+    CPLayoutManagerDelegateKey                  = @"CPLayoutManagerDelegateKey",
+    CPLayoutManagerTextContainersKey            = @"CPLayoutManagerTextContainersKey",
+    CPLayoutManagerTypesetterKey                = @"CPLayoutManagerTypesetterKey",
+    CPLayoutManagerLineFragmentsKey             = @"CPLayoutManagerLineFragmentsKey",
+    CPLayoutManagerExtraLineFragmentKey         = @"CPLayoutManagerExtraLineFragmentKey",
+    CPLayoutManagerTemporaryAttributesKey       = @"CPLayoutManagerTemporaryAttributesKey",
+    CPLayoutManagerValidatingLayoutAndGlyphsKey = @"CPLayoutManagerValidatingLayoutAndGlyphsKey";
+
+@implementation CPLayoutManager (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init]
+    
+    if (self)
+    {
+        _textStorage = [aCoder decodeObjectForKey:CPLayoutManagerTextStorageKey];
+        _delegate = [aCoder decodeObjectForKey:CPLayoutManagerDelegateKey];
+        _textContainers = [aCoder decodeObjectForKey:CPLayoutManagerTextContainersKey];
+        _typesetter = [aCoder decodeObjectForKey:CPLayoutManagerTypesetterKey];
+        _lineFragments = [aCoder decodeObjectForKey:CPLayoutManagerLineFragmentsKey];
+        _extraLineFragment = [aCoder decodeObjectForKey:CPLayoutManagerExtraLineFragmentKey];
+        _lineFragmentFactory = [_CPLineFragment class];
+        _temporaryAttributes = [aCoder decodeObjectForKey:CPLayoutManagerTemporaryAttributesKey];
+        _isValidatingLayoutAndGlyphs = [aCoder decodeBoolForKey:CPLayoutManagerValidatingLayoutAndGlyphsKey];
+    }
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeObject:_textStorage forKey:CPLayoutManagerTextStorageKey];
+    [aCoder encodeObject:_delegate forKey:CPLayoutManagerDelegateKey];
+    [aCoder encodeObject:_textContainers forKey:CPLayoutManagerTextContainersKey];
+    [aCoder encodeObject:_typesetter forKey:CPLayoutManagerTypesetterKey];
+    [aCoder encodeObject:_lineFragments forKey:CPLayoutManagerLineFragmentsKey];
+    [aCoder encodeObject:_extraLineFragment forKey:CPLayoutManagerExtraLineFragmentKey];
+    [aCoder encodeObject:_temporaryAttributes forKey:CPLayoutManagerTemporaryAttributesKey];
+    [aCoder encodeBool:_isValidatingLayoutAndGlyphs forKey:CPLayoutManagerValidatingLayoutAndGlyphsKey];
+}
+
 @end

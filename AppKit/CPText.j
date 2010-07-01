@@ -174,3 +174,24 @@ CPDeleteCharacter             = 0x007f;
     return NO;
 }
 @end
+
+@implementation CPText (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super initWithCoder:aCoder];
+
+    if (self)
+    {
+
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+}
+
+@end

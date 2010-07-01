@@ -272,3 +272,45 @@ CPUnderlineStyleAttributeName = @"CPUnderlineStyleAttributeName";
     return _foregroundColor;
 }
 @end
+
+var CPTextStorageLayoutManagersKey          = @"CPTextStorageLayoutManagersKey",
+    CPTextStorageDelegateKey                = @"CPTextStorageDelegateKey",
+    CPTextStorageEditedMaskKey              = @"CPTextStorageEditedMaskKey",
+    CPTextStorageEditedRangeKey             = @"CPTextStorageEditedRangeKey",
+    CPTextStorageEditCountKey               = @"CPTextStorageEditCountKey",
+    CPTextStorageFontKey                    = @"CPTextStorageFontKey",
+    CPTextStorageForegroundColorKey         = @"CPTextStorageForegroundColorKey";
+    
+@implementation CPTextStorage (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+
+    if (self)
+    {
+        _layoutManagers = [aCoder decodeObjectForKey:CPTextStorageLayoutManagersKey];
+        [self setDelegate:[aCoder decodeObjectForKey:CPTextStorageDelegateKey]];
+        _changeInLength = 0;
+        _editedMask = [aCoder decodeObjectForKey:CPTextStorageEditedMaskKey];
+        _editedRange = [aCoder decodeObjectForKey:CPTextStorageEditedRangeKey];
+        _editCount = [aCoder decodeIntForKey:CPTextStorageEditCountKey];
+        _font = [aCoder decodeObjectForKey:CPTextStorageFontKey];
+        _foregroundColor = [aCoder decodeObjectForKey:CPTextStorageForegroundColorKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeObject:_layoutManagers forKey:CPTextStorageLayoutManagersKey];
+    [aCoder encodeObject:_delegate forKey:CPTextStorageDelegateKey];
+    [aCoder encodeObject:_editedMask forKey:CPTextStorageEditedMaskKey];
+    [aCoder encodeObject:_editedRange forKey:CPTextStorageEditedRangeKey];
+    [aCoder encodeInt:_editCount forKey:CPTextStorageEditCountKey];
+    [aCoder encodeObject:_font forKey:CPTextStorageFontKey];
+    [aCoder encodeObject:_foregroundColor forKey:CPTextStorageForegroundColorKey];
+}
+
+@end

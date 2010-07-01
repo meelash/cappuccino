@@ -185,3 +185,51 @@ var _sharedSimpleTypesetter = nil;
     }
 }
 @end
+
+var CPSimpleTypesetterLayoutManagerKey                  = @"CPSimpleTypesetterLayoutManagerKey",
+    CPSimpleTypesetterCurrentTextContainerKey           = @"CPSimpleTypesetterCurrentTextContainerKey",
+    CPSimpleTypesetterTextStorageKey                    = @"CPSimpleTypesetterTextStorageKey",
+    CPSimpleTypesetterAttributesRangeKey                = @"CPSimpleTypesetterAttributesRangeKey",
+    CPSimpleTypesetterCurrentAttributesKey              = @"CPSimpleTypesetterCurrentAttributesKey",
+    CPSimpleTypesetterCurrentFontKey                    = @"CPSimpleTypesetterCurrentFontKey",
+    CPSimpleTypesetterLineHeightKey                     = @"CPSimpleTypesetterLineHeightKey",
+    CPSimpleTypesetterLineBaseKey                       = @"CPSimpleTypesetterLineBaseKey";
+
+@implementation CPSimpleTypesetter (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super initWithCoder:aCoder];
+    
+    if (self)
+    {
+        _layoutManager = [aCoder decodeObjectForKey:CPSimpleTypesetterLayoutManagerKey];
+        _currentTextContainer = [aCoder decodeObjectForKey:CPSimpleTypesetterCurrentTextContainerKey];
+        _textStorage = [aCoder decodeObjectForKey:CPSimpleTypesetterTextStorageKey];
+        
+        _attributesRange = [aCoder decodeObjectForKey:CPSimpleTypesetterAttributesRangeKey];
+        _currentAttributes = [aCoder decodeObjectForKey:CPSimpleTypesetterCurrentAttributesKey];
+        _currentFont = [aCoder decodeObjectForKey:CPSimpleTypesetterCurrentFontKey];
+        
+        _lineHeight = [aCoder decodeObjectForKey:CPSimpleTypesetterLineHeightKey];
+        _lineBase = [aCoder decodeObjectForKey:CPSimpleTypesetterLineBaseKey];
+    }
+    
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+    
+    [aCoder encodeObject:_layoutManager forKey:CPSimpleTypesetterLayoutManagerKey];
+    [aCoder encodeObject:_currentTextContainer forKey:CPSimpleTypesetterCurrentTextContainerKey];
+    [aCoder encodeObject:_textStorage forKey:CPSimpleTypesetterTextStorageKey];
+        
+    [aCoder encodeObject:_attributesRange forKey:CPSimpleTypesetterAttributesRangeKey];
+    [aCoder encodeObject:_currentAttributes forKey:CPSimpleTypesetterCurrentAttributesKey];
+    [aCoder encodeObject:_currentFont forKey:CPSimpleTypesetterCurrentFontKey];
+        
+    [aCoder encodeObject:_lineHeight forKey:CPSimpleTypesetterLineHeightKey];
+    [aCoder encodeObject:_lineBase forKey:CPSimpleTypesetterLineBaseKey];
+}
