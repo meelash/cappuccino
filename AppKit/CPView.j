@@ -990,6 +990,11 @@ var CPViewFlags                     = { },
         origin.y *= size.height / frameSize.height;
     }
     
+    if (frameSize.width == 0)
+        origin.x = 0;
+    if (frameSize.height == 0)
+        origin.y = 0;
+    
     if (_postsBoundsChangedNotifications && !_inhibitFrameAndBoundsChangedNotifications)
         [CachedNotificationCenter postNotificationName:CPViewBoundsDidChangeNotification object:self];
 }
