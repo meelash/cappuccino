@@ -512,6 +512,8 @@ var kDelegateRespondsTo_textShouldBeginEditing                                  
 {
     [_carretTimer invalidate];
     _carretTimer = nil;
+    _drawCarret = NO;
+    [self setNeedsDisplayInRect:_carretRect]
     _isFirstResponder = NO;
     return YES;
 }
