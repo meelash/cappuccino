@@ -115,7 +115,7 @@ var _sharedSimpleTypesetter = nil;
             wrapRange = CPCopyRange(lineRange);
             wrapWidth = lineWidth;
         }
-        else if (currentChar == '\n') /* FIXME: should send actionForControlCharacterAtIndex: */
+        else if (currentChar == '\n' | currentChar == '\r') /* FIXME: should send actionForControlCharacterAtIndex: */
         {
             isNewline = YES;
         }
